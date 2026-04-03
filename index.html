@@ -1,0 +1,1396 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Hold Your Voice scores your writing against a profile built from your best work — and shows you, sentence by sentence, exactly where you drifted and why.">
+  <meta property="og:title" content="Hold Your Voice — Keep your brand voice consistent">
+  <meta property="og:description" content="Paste what you wrote. Get sentence-level feedback on exactly where your voice drifted and how to fix it.">
+  <meta property="og:type" content="website">
+  <title>Hold Your Voice</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32' fill='none'><rect x='11' y='2' width='10' height='15' rx='5' fill='%230a0a0a'/><path d='M16 18 L16 25' stroke='%230a0a0a' stroke-width='2' stroke-linecap='round'/><path d='M11 25 Q16 28 21 25' stroke='%230a0a0a' stroke-width='2' stroke-linecap='round'/><path d='M9 6 Q4 9.5 9 14' stroke='%230a0a0a' stroke-width='1.75' stroke-linecap='round'/><path d='M6 3.5 Q-1 9.5 6 17' stroke='%230a0a0a' stroke-width='1.4' stroke-linecap='round'/><path d='M23 6 Q28 9.5 23 14' stroke='%230a0a0a' stroke-width='1.75' stroke-linecap='round'/><path d='M26 3.5 Q33 9.5 26 17' stroke='%230a0a0a' stroke-width='1.4' stroke-linecap='round'/></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Google+Sans:ital,wght@0,400;0,500;0,700;1,400&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: 'Google Sans', 'Helvetica Neue', Arial, sans-serif;
+      background: #fff;
+      color: #0a0a0a;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+    }
+    h1, h2, h3 { text-wrap: balance; }
+    p { text-wrap: pretty; }
+
+    :root {
+      --bg: #ffffff;
+      --surface: #f7f7f7;
+      --surface-2: #efefef;
+      --border: #e8e8e8;
+      --border-2: #d4d4d4;
+      --ink: #0a0a0a;
+      --ink-2: #444444;
+      --ink-3: #888888;
+      --ink-4: #bbbbbb;
+      --max-w: 780px;
+      --max-w-wide: 1100px;
+    }
+
+    /* ─── Reveal ─────────────────────────────── */
+    [data-reveal] {
+      opacity: 0;
+      transform: translateY(16px);
+      transition: opacity 0.6s ease, transform 0.6s ease;
+      transition-delay: var(--delay, 0ms);
+    }
+    [data-reveal].visible { opacity: 1; transform: none; }
+    @media (prefers-reduced-motion: reduce) {
+      [data-reveal] { opacity: 1; transform: none; transition: none; }
+    }
+
+    /* ─── Layout ─────────────────────────────── */
+    .wrap { max-width: var(--max-w); margin: 0 auto; padding: 0 1.5rem; }
+    .wrap-wide { max-width: var(--max-w-wide); margin: 0 auto; padding: 0 1.5rem; }
+    .section { padding: clamp(5rem, 9vw, 8rem) 0; }
+    .eyebrow {
+      font-size: 0.6875rem;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--ink-3);
+      margin-bottom: 1.25rem;
+      display: block;
+    }
+
+    /* ─── Buttons ────────────────────────────── */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.375rem;
+      font-family: inherit;
+      font-size: 0.875rem;
+      font-weight: 500;
+      padding: 0.625rem 1.25rem;
+      min-height: 40px;
+      border-radius: 100px;
+      border: 1px solid transparent;
+      cursor: pointer;
+      text-decoration: none;
+      white-space: nowrap;
+      transition: background 0.15s, border-color 0.15s, color 0.15s, scale 0.12s;
+    }
+    .btn:active { scale: 0.96; }
+    .btn-dark { background: var(--ink); color: #fff; }
+    .btn-dark:hover { background: #222; }
+    .btn-outline {
+      background: transparent;
+      border-color: var(--border-2);
+      color: var(--ink-2);
+    }
+    .btn-outline:hover { border-color: var(--ink-3); color: var(--ink); }
+    .btn-ghost {
+      background: transparent;
+      color: var(--ink-3);
+    }
+    .btn-ghost:hover { color: var(--ink); }
+
+    /* ─── NAV ────────────────────────────────── */
+    #nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      height: 56px;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 2rem;
+      background: rgba(255,255,255,0);
+      border-bottom: 1px solid transparent;
+      transition: background 0.3s, border-color 0.3s, backdrop-filter 0.3s;
+    }
+    #nav.scrolled {
+      background: rgba(255,255,255,0.9);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-bottom-color: var(--border);
+    }
+    .nav-logo {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.9375rem;
+      font-weight: 700;
+      color: var(--ink);
+      text-decoration: none;
+      letter-spacing: -0.01em;
+    }
+    .nav-logo-mark { flex-shrink: 0; }
+    .nav-right { display: flex; align-items: center; gap: 0.5rem; }
+    .nav-demo {
+      font-size: 0.8125rem;
+      color: var(--ink-3);
+      text-decoration: none;
+      padding: 0.375rem 0.75rem;
+      border-radius: 100px;
+      transition: color 0.15s, background 0.15s;
+    }
+    .nav-demo:hover { color: var(--ink); background: var(--surface); }
+
+    /* ─── HERO ───────────────────────────────── */
+    #hero {
+      padding-top: 56px;
+      min-height: 100svh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      background: linear-gradient(to bottom, #ffffff 0%, #ffffff 40%, #e8e8e8 100%);
+    }
+    .hero-top { padding: clamp(3.5rem, 7vw, 6rem) 1.5rem 3rem; width: 100%; }
+    .hero-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.75rem;
+      color: var(--ink-3);
+      border: 1px solid var(--border);
+      padding: 0.3rem 0.875rem;
+      border-radius: 100px;
+      margin-bottom: 2rem;
+      background: var(--surface);
+    }
+    .hero-dot {
+      width: 5px; height: 5px;
+      border-radius: 50%;
+      background: #22c55e;
+      box-shadow: 0 0 0 3px rgba(34,197,94,0.2);
+    }
+    .hero-h1 {
+      font-size: clamp(2.75rem, 6vw, 5rem);
+      font-weight: 700;
+      letter-spacing: -0.04em;
+      line-height: 1.05;
+      color: var(--ink);
+      max-width: 700px;
+      margin: 0 auto 1.5rem;
+    }
+    .hero-sub {
+      font-size: clamp(1rem, 2vw, 1.125rem);
+      color: var(--ink-2);
+      max-width: 520px;
+      margin: 0 auto 2.25rem;
+      line-height: 1.75;
+    }
+    .hero-ctas { display: flex; gap: 0.625rem; justify-content: center; flex-wrap: wrap; }
+
+    /* ─── PRODUCT PREVIEW ────────────────────── */
+    .hero-preview {
+      width: 100%;
+      padding: 0 1.5rem 0;
+      max-width: 960px;
+      margin: 3rem auto 0;
+    }
+    .preview-window {
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      box-shadow:
+        0 0 0 1px rgba(0,0,0,0.04),
+        0 4px 8px rgba(0,0,0,0.04),
+        0 16px 48px rgba(0,0,0,0.08),
+        0 32px 80px rgba(0,0,0,0.04);
+      overflow: hidden;
+    }
+    .preview-titlebar {
+      background: #f5f5f5;
+      border-bottom: 1px solid var(--border);
+      padding: 0.75rem 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .titlebar-dots { display: flex; gap: 6px; }
+    .titlebar-dot {
+      width: 11px; height: 11px;
+      border-radius: 50%;
+    }
+    .dot-red { background: #ff5f57; }
+    .dot-yellow { background: #febc2e; }
+    .dot-green { background: #28c840; }
+    .titlebar-label {
+      font-size: 0.75rem;
+      color: var(--ink-3);
+      margin-left: auto;
+      margin-right: auto;
+      padding-right: 3rem;
+    }
+    .preview-body {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      min-height: 340px;
+    }
+    .preview-input {
+      padding: 2rem;
+      border-right: 1px solid var(--border);
+    }
+    .preview-input-label {
+      font-size: 0.6875rem;
+      font-weight: 500;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--ink-4);
+      margin-bottom: 1rem;
+    }
+    .preview-text {
+      font-size: 0.875rem;
+      line-height: 1.8;
+      color: var(--ink-2);
+    }
+    .preview-text .drift {
+      background: #fef9c3;
+      border-bottom: 2px solid #eab308;
+      border-radius: 2px;
+      padding: 0 2px;
+    }
+    .preview-text .drift-2 {
+      background: #fef2f2;
+      border-bottom: 2px solid #f87171;
+      border-radius: 2px;
+      padding: 0 2px;
+    }
+    .preview-feedback { padding: 2rem; background: #fafafa; }
+    .preview-feedback-label {
+      font-size: 0.6875rem;
+      font-weight: 500;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--ink-4);
+      margin-bottom: 1.25rem;
+    }
+    .preview-score {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+      padding-bottom: 1.5rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .preview-score-num {
+      font-size: 2.25rem;
+      font-weight: 700;
+      letter-spacing: -0.04em;
+      color: var(--ink);
+      font-variant-numeric: tabular-nums;
+      line-height: 1;
+    }
+    .preview-score-meta { font-size: 0.8125rem; color: var(--ink-3); line-height: 1.4; }
+    .preview-score-bar {
+      height: 4px;
+      background: var(--border);
+      border-radius: 2px;
+      overflow: hidden;
+      margin-top: 0.5rem;
+      width: 80px;
+    }
+    .preview-score-fill {
+      height: 100%;
+      width: 82%;
+      background: var(--ink);
+      border-radius: 2px;
+    }
+    .preview-notes { display: flex; flex-direction: column; gap: 0.75rem; }
+    .preview-note {
+      padding: 0.75rem 0.875rem;
+      border-radius: 6px;
+      font-size: 0.8125rem;
+      line-height: 1.5;
+    }
+    .preview-note-warn {
+      background: #fef9c3;
+      color: #713f12;
+      border: 1px solid #fde68a;
+    }
+    .preview-note-err {
+      background: #fef2f2;
+      color: #7f1d1d;
+      border: 1px solid #fecaca;
+    }
+    .preview-note-ok {
+      background: #f0fdf4;
+      color: #14532d;
+      border: 1px solid #bbf7d0;
+    }
+    .note-tag {
+      font-weight: 700;
+      margin-right: 0.25rem;
+    }
+    @media (max-width: 640px) {
+      .preview-body { grid-template-columns: 1fr; }
+      .preview-input { border-right: none; border-bottom: 1px solid var(--border); }
+    }
+
+    /* ─── STRIP ──────────────────────────────── */
+    .strip {
+      background: #e8e8e8;
+      border-top: none;
+      border-bottom: 1px solid #d4d4d4;
+      padding: 1.5rem;
+      text-align: center;
+      font-size: 0.875rem;
+      color: var(--ink-3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 2rem;
+      flex-wrap: wrap;
+    }
+    .strip-item { display: flex; align-items: center; gap: 0.5rem; }
+    .strip-divider { color: var(--border-2); }
+
+    /* ─── PROBLEM ────────────────────────────── */
+    .problem-layout {
+      display: grid;
+      grid-template-columns: 1fr 1.5fr;
+      gap: 5rem;
+      align-items: start;
+    }
+    .problem-sticky { position: sticky; top: 5rem; }
+    .problem-sticky h2 {
+      font-size: clamp(1.75rem, 3vw, 2.5rem);
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      line-height: 1.2;
+      margin-bottom: 1.25rem;
+    }
+    .problem-sticky p {
+      font-size: 1rem;
+      color: var(--ink-2);
+      line-height: 1.75;
+    }
+    .problem-list { display: flex; flex-direction: column; }
+    .problem-entry {
+      padding: 2rem 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .problem-entry:first-child { padding-top: 0; border-top: none; }
+    .problem-num {
+      font-size: 0.6875rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--ink-4);
+      margin-bottom: 0.625rem;
+    }
+    .problem-entry h3 {
+      font-size: 1.0625rem;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+      margin-bottom: 0.5rem;
+    }
+    .problem-entry p {
+      font-size: 0.9375rem;
+      color: var(--ink-2);
+      line-height: 1.7;
+    }
+    @media (max-width: 768px) {
+      .problem-layout { grid-template-columns: 1fr; gap: 2.5rem; }
+      .problem-sticky { position: static; }
+    }
+
+    /* ─── HOW IT WORKS ───────────────────────── */
+    #how-it-works { background: var(--surface); }
+    .hiw-header { text-align: center; margin-bottom: 4rem; }
+    .hiw-header h2 {
+      font-size: clamp(1.75rem, 3.5vw, 2.75rem);
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      line-height: 1.15;
+      margin-bottom: 1rem;
+    }
+    .hiw-header p { font-size: 1rem; color: var(--ink-2); max-width: 420px; margin: 0 auto; line-height: 1.75; }
+    .hiw-steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: var(--border); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+    .hiw-step { background: #fff; padding: 2rem 1.75rem; }
+    .hiw-icon {
+      width: 36px; height: 36px;
+      border-radius: 10px;
+      background: var(--surface);
+      display: flex; align-items: center; justify-content: center;
+      margin-bottom: 1.25rem;
+    }
+    .hiw-step-n {
+      font-size: 0.6875rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      color: var(--ink-4);
+      text-transform: uppercase;
+      margin-bottom: 1.25rem;
+    }
+    .hiw-step h3 { font-size: 1rem; font-weight: 700; margin-bottom: 0.5rem; letter-spacing: -0.01em; }
+    .hiw-step p { font-size: 0.875rem; color: var(--ink-2); line-height: 1.7; }
+    @media (max-width: 768px) {
+      .hiw-steps { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 480px) {
+      .hiw-steps { grid-template-columns: 1fr; }
+    }
+
+    /* ─── WHY NOW ────────────────────────────── */
+    #why-now { background: var(--ink); color: #fff; }
+    .why-now-layout {
+      display: grid;
+      grid-template-columns: 1fr 1.2fr;
+      gap: 4rem;
+      align-items: center;
+    }
+    .why-now-h2 {
+      font-size: clamp(1.75rem, 3vw, 2.5rem);
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      line-height: 1.2;
+      margin-bottom: 1rem;
+    }
+    .why-now-sub { font-size: 1rem; color: rgba(255,255,255,0.5); line-height: 1.75; margin-bottom: 2rem; }
+    .why-now-bullets { list-style: none; display: flex; flex-direction: column; gap: 1rem; }
+    .why-now-bullet {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.875rem;
+      font-size: 0.9375rem;
+      color: rgba(255,255,255,0.7);
+      line-height: 1.6;
+    }
+    .why-now-bullet strong { color: #fff; }
+    .wn-dot {
+      flex-shrink: 0;
+      width: 5px; height: 5px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.35);
+      margin-top: 0.55rem;
+    }
+    /* drift mockup */
+    .drift-window {
+      background: #1a1a1a;
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 8px 40px rgba(0,0,0,0.5), 0 2px 8px rgba(0,0,0,0.3);
+    }
+    .drift-titlebar {
+      background: #222;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      padding: 0.6rem 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .drift-titlebar .titlebar-dots { display: flex; gap: 5px; }
+    .drift-titlebar .titlebar-dot { width: 10px; height: 10px; border-radius: 50%; }
+    .drift-titlebar-label {
+      font-size: 0.6875rem;
+      color: rgba(255,255,255,0.3);
+      margin: 0 auto;
+      padding-right: 2.5rem;
+    }
+    .drift-body { padding: 1.5rem; }
+    .drift-section-label {
+      font-size: 0.6875rem;
+      font-weight: 500;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.3);
+      margin-bottom: 1.25rem;
+    }
+    .drift-bars {
+      display: flex;
+      align-items: flex-end;
+      gap: 6px;
+      height: 100px;
+      margin-bottom: 0.75rem;
+    }
+    .drift-bar-wrap { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; height: 100%; justify-content: flex-end; }
+    .drift-bar {
+      width: 100%;
+      border-radius: 4px 4px 0 0;
+      transition: opacity 0.2s;
+    }
+    .drift-bar-ok { background: rgba(74,222,128,0.7); }
+    .drift-bar-warn { background: rgba(251,191,36,0.7); }
+    .drift-bar-bad { background: rgba(248,113,113,0.7); }
+    .drift-bar-label { font-size: 0.5625rem; color: rgba(255,255,255,0.3); white-space: nowrap; }
+    .drift-x-labels { display: flex; gap: 6px; }
+    .drift-x-label { flex: 1; text-align: center; font-size: 0.5625rem; color: rgba(255,255,255,0.25); }
+    .drift-summary {
+      margin-top: 1.25rem;
+      padding-top: 1.25rem;
+      border-top: 1px solid rgba(255,255,255,0.07);
+    }
+    .drift-summary-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.625rem; }
+    .drift-summary-label { font-size: 0.8125rem; color: rgba(255,255,255,0.45); }
+    .drift-summary-val { font-size: 0.8125rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+    .drift-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.375rem;
+      font-size: 0.6875rem;
+      padding: 0.25rem 0.625rem;
+      border-radius: 100px;
+      margin-top: 0.875rem;
+    }
+    .drift-tag-warn { background: rgba(251,191,36,0.15); color: #fbbf24; border: 1px solid rgba(251,191,36,0.2); }
+    @media (max-width: 768px) {
+      .why-now-layout { grid-template-columns: 1fr; }
+    }
+
+    /* ─── FRAMEWORK ──────────────────────────── */
+    .fw-layout {
+      display: grid;
+      grid-template-columns: 1fr 1.75fr;
+      gap: 5rem;
+      align-items: start;
+    }
+    .fw-sticky { position: sticky; top: 5rem; }
+    .fw-sticky h2 {
+      font-size: clamp(1.75rem, 3vw, 2.5rem);
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      line-height: 1.2;
+      margin-bottom: 1.25rem;
+    }
+    .fw-sticky p { font-size: 1rem; color: var(--ink-2); line-height: 1.75; }
+    .fw-list { display: flex; flex-direction: column; }
+    .fw-item {
+      display: grid;
+      grid-template-columns: 2.5rem 1fr;
+      gap: 1rem;
+      padding: 1.75rem 0;
+      border-bottom: 1px solid var(--border);
+      align-items: start;
+    }
+    .fw-item:first-child { padding-top: 0; border-top: none; }
+    .fw-n { font-size: 0.6875rem; font-weight: 700; color: var(--ink-4); letter-spacing: 0.06em; padding-top: 0.15rem; }
+    .fw-item h3 { font-size: 0.9375rem; font-weight: 700; margin-bottom: 0.375rem; letter-spacing: -0.01em; }
+    .fw-item p { font-size: 0.875rem; color: var(--ink-2); line-height: 1.65; }
+    @media (max-width: 768px) {
+      .fw-layout { grid-template-columns: 1fr; gap: 2.5rem; }
+      .fw-sticky { position: static; }
+    }
+
+    /* ─── WHY NOT AI ─────────────────────────── */
+    #why-not-ai { background: var(--surface); }
+    .wna-header h2 {
+      font-size: clamp(1.75rem, 3.5vw, 2.75rem);
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      line-height: 1.2;
+      margin-bottom: 1rem;
+    }
+    .wna-header p { font-size: 1rem; color: var(--ink-2); max-width: 520px; line-height: 1.75; margin-bottom: 3rem; }
+    .wna-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    .wna-col { background: #fff; border: 1px solid var(--border); border-radius: 12px; padding: 2rem; }
+    .wna-col-dark { background: var(--ink); border-color: var(--ink); }
+    .wna-tag {
+      display: inline-block;
+      font-size: 0.6875rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 0.25rem 0.75rem;
+      border-radius: 100px;
+      margin-bottom: 1.75rem;
+    }
+    .wna-tag-bad { background: #fee2e2; color: #b91c1c; }
+    .wna-tag-good { background: #dcfce7; color: #15803d; }
+    .wna-items { display: flex; flex-direction: column; gap: 0.875rem; }
+    .wna-item { display: flex; align-items: flex-start; gap: 0.75rem; font-size: 0.9rem; line-height: 1.55; }
+    .wna-item-bad { color: var(--ink-2); }
+    .wna-item-good { color: rgba(255,255,255,0.8); }
+    .wna-icon { flex-shrink: 0; margin-top: 0.1rem; font-size: 0.75rem; width: 16px; }
+    @media (max-width: 640px) { .wna-grid { grid-template-columns: 1fr; } }
+
+    /* ─── PRICING ────────────────────────────── */
+    .pricing-header { text-align: center; margin-bottom: 3.5rem; }
+    .pricing-header h2 {
+      font-size: clamp(1.75rem, 3.5vw, 2.75rem);
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      line-height: 1.2;
+      margin-bottom: 1rem;
+    }
+    .pricing-header p { font-size: 1rem; color: var(--ink-2); max-width: 400px; margin: 0 auto; line-height: 1.75; }
+    .pricing-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; max-width: 820px; margin: 0 auto; }
+    .pc {
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 2.25rem;
+      display: flex;
+      flex-direction: column;
+    }
+    .pc-featured { background: var(--ink); border-color: var(--ink); color: #fff; }
+    .pc-badge {
+      display: inline-block;
+      font-size: 0.6875rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 0.25rem 0.75rem;
+      border-radius: 100px;
+      margin-bottom: 1.5rem;
+      align-self: flex-start;
+    }
+    .pc-badge-default { background: #fef9c3; color: #854d0e; }
+    .pc-badge-featured { background: #dcfce7; color: #15803d; }
+    .pc-name { font-size: 0.9375rem; font-weight: 700; margin-bottom: 0.25rem; }
+    .pc-desc { font-size: 0.875rem; color: var(--ink-2); margin-bottom: 1.75rem; line-height: 1.55; }
+    .pc-featured .pc-desc { color: rgba(255,255,255,0.5); }
+    .pc-price { display: flex; align-items: flex-end; gap: 0.25rem; margin-bottom: 0.375rem; }
+    .pc-dollar { font-size: 1.25rem; font-weight: 700; padding-bottom: 0.3rem; }
+    .pc-num { font-size: 3.25rem; font-weight: 700; letter-spacing: -0.04em; line-height: 1; font-variant-numeric: tabular-nums; }
+    .pc-per { font-size: 0.875rem; color: var(--ink-3); padding-bottom: 0.35rem; }
+    .pc-featured .pc-per { color: rgba(255,255,255,0.4); }
+    .pc-note { font-size: 0.8125rem; color: var(--ink-3); margin-bottom: 1.75rem; }
+    .pc-featured .pc-note { color: rgba(255,255,255,0.4); }
+    .pc-divider { height: 1px; background: var(--border); margin-bottom: 1.75rem; }
+    .pc-featured .pc-divider { background: rgba(255,255,255,0.1); }
+    .pc-features { list-style: none; display: flex; flex-direction: column; gap: 0.75rem; margin-bottom: 2rem; flex: 1; }
+    .pc-feature { display: flex; align-items: flex-start; gap: 0.75rem; font-size: 0.9rem; line-height: 1.5; color: var(--ink-2); }
+    .pc-featured .pc-feature { color: rgba(255,255,255,0.7); }
+    .pc-feature strong { color: var(--ink); font-weight: 600; }
+    .pc-featured .pc-feature strong { color: #fff; }
+    .pc-check {
+      flex-shrink: 0;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-top: 0.15rem;
+    }
+    .pc-check-default { background: var(--surface-2); }
+    .pc-check-featured { background: rgba(255,255,255,0.15); }
+    .pc-cta { width: 100%; justify-content: center; font-size: 0.9375rem; padding: 0.75rem 1.5rem; border-radius: 8px; }
+    .pc-footer { text-align: center; font-size: 0.8rem; margin-top: 0.875rem; color: var(--ink-3); }
+    .pc-featured .pc-footer { color: rgba(255,255,255,0.35); }
+    .pricing-note-below {
+      text-align: center;
+      font-size: 0.8125rem;
+      color: var(--ink-3);
+      margin-top: 1.5rem;
+      max-width: 820px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    .pricing-note-below a { color: var(--ink-2); text-decoration: underline; text-underline-offset: 3px; }
+    @media (max-width: 580px) {
+      .pricing-cards { grid-template-columns: 1fr; }
+    }
+
+    /* ─── FAQ ────────────────────────────────── */
+    #faq { background: var(--surface); }
+    .faq-header { text-align: center; margin-bottom: 3rem; }
+    .faq-header h2 {
+      font-size: clamp(1.75rem, 3vw, 2.25rem);
+      font-weight: 700;
+      letter-spacing: -0.03em;
+    }
+    .faq-list { max-width: 640px; margin: 0 auto; }
+    .faq-item {
+      border-bottom: 1px solid var(--border);
+    }
+    .faq-item:first-child { border-top: 1px solid var(--border); }
+    .faq-q {
+      width: 100%;
+      text-align: left;
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 0.9375rem;
+      font-weight: 600;
+      color: var(--ink);
+      padding: 1.25rem 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1rem;
+    }
+    .faq-q:hover { color: var(--ink-2); }
+    .faq-icon {
+      flex-shrink: 0;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: var(--surface-2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.25s, background 0.15s;
+      font-size: 0.75rem;
+      color: var(--ink-3);
+    }
+    .faq-item.open .faq-icon { transform: rotate(45deg); background: var(--ink); color: #fff; }
+    .faq-a {
+      font-size: 0.9375rem;
+      color: var(--ink-2);
+      line-height: 1.75;
+      overflow: hidden;
+      max-height: 0;
+      transition: max-height 0.35s ease, padding 0.35s ease;
+      padding-bottom: 0;
+    }
+    .faq-item.open .faq-a { max-height: 300px; padding-bottom: 1.5rem; }
+
+    /* ─── FOOTER CTA ─────────────────────────── */
+    #footer-cta {
+      text-align: center;
+      padding: clamp(5rem, 9vw, 8rem) 1.5rem;
+      border-top: 1px solid var(--border);
+    }
+    #footer-cta h2 {
+      font-size: clamp(2rem, 4.5vw, 3.5rem);
+      font-weight: 700;
+      letter-spacing: -0.04em;
+      line-height: 1.1;
+      max-width: 600px;
+      margin: 0 auto 1.25rem;
+    }
+    #footer-cta p {
+      font-size: 1rem;
+      color: var(--ink-2);
+      max-width: 440px;
+      margin: 0 auto 2.5rem;
+      line-height: 1.75;
+    }
+    .footer-ctas { display: flex; gap: 0.625rem; justify-content: center; flex-wrap: wrap; }
+
+    /* ─── FOOTER ─────────────────────────────── */
+    footer {
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      padding: 3rem 2rem 2rem;
+    }
+    .footer-inner {
+      max-width: var(--max-w-wide);
+      margin: 0 auto;
+    }
+    .footer-top {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 3rem;
+      padding-bottom: 2.5rem;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 1.5rem;
+    }
+    .footer-brand { max-width: 240px; }
+    .footer-logo { font-size: 0.9375rem; font-weight: 700; color: var(--ink); display: block; margin-bottom: 0.5rem; }
+    .footer-tagline { font-size: 0.8125rem; color: var(--ink-3); line-height: 1.6; }
+    .footer-nav-cols {
+      display: flex;
+      gap: 3.5rem;
+      flex-wrap: wrap;
+    }
+    .footer-nav-col h4 {
+      font-size: 0.6875rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--ink-3);
+      margin-bottom: 0.875rem;
+    }
+    .footer-nav-col ul { list-style: none; display: flex; flex-direction: column; gap: 0.625rem; }
+    .footer-nav-col a {
+      font-size: 0.875rem;
+      color: var(--ink-2);
+      text-decoration: none;
+      transition: color 0.15s;
+      padding: 0.25rem 0;
+      display: inline-block;
+      min-height: 32px;
+      line-height: 2;
+    }
+    .footer-nav-col a:hover { color: var(--ink); }
+    .footer-bottom {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      text-align: center;
+    }
+    .footer-fine { font-size: 0.8125rem; color: var(--ink-3); }
+    .footer-fine a { color: var(--ink-3); text-decoration: underline; text-underline-offset: 3px; }
+    @media (max-width: 640px) {
+      .footer-top { grid-template-columns: 1fr; }
+      .footer-nav-cols { gap: 2rem; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- NAV -->
+  <nav id="nav">
+    <a href="#" class="nav-logo">Hold Your Voice</a>
+    <div class="nav-right">
+      <a href="#waitlist" class="btn btn-dark" style="padding: 0.5rem 1rem; font-size: 0.8125rem;">Join Waitlist →</a>
+    </div>
+  </nav>
+
+  <main>
+
+    <!-- HERO -->
+    <section id="hero">
+      <div class="hero-top">
+        <div data-reveal>
+          <div class="hero-status">
+            <span class="hero-dot"></span>
+            Pre-launch · Waitlist open
+          </div>
+        </div>
+        <h1 class="hero-h1" data-reveal style="--delay:60ms">Your writing<br>has a voice. Keep it.</h1>
+        <p class="hero-sub" data-reveal style="--delay:120ms">Paste anything you've written. Hold Your Voice scores it against a profile built from your best work — and shows you, sentence by sentence, exactly where you drifted.</p>
+        <div class="hero-ctas" data-reveal style="--delay:180ms">
+          <a href="#waitlist" class="btn btn-dark">Join the Waitlist — It's Free</a>
+          <a href="#how-it-works" class="btn btn-outline">See how it works</a>
+        </div>
+      </div>
+
+      <!-- Product preview -->
+      <div class="hero-preview" data-reveal style="--delay:260ms">
+        <div class="preview-window">
+          <div class="preview-titlebar">
+            <div class="titlebar-dots">
+              <div class="titlebar-dot dot-red"></div>
+              <div class="titlebar-dot dot-yellow"></div>
+              <div class="titlebar-dot dot-green"></div>
+            </div>
+            <span class="titlebar-label">Hold Your Voice — Voice Analysis</span>
+          </div>
+          <div class="preview-body">
+            <div class="preview-input">
+              <div class="preview-input-label">Your draft</div>
+              <div class="preview-text">
+                We are <span class="drift-2">pleased to announce</span> the launch of our new product. <span class="drift">It is designed to help users achieve their goals</span> more effectively.<br><br>
+                Our team has worked hard on this. <span class="drift">The solution leverages cutting-edge technology</span> to deliver results that matter to your business.
+              </div>
+            </div>
+            <div class="preview-feedback">
+              <div class="preview-feedback-label">Voice analysis</div>
+              <div class="preview-score">
+                <div>
+                  <div class="preview-score-num">61<span style="font-size:1.5rem;color:#888">/100</span></div>
+                  <div class="preview-score-bar"><div class="preview-score-fill" style="width:61%"></div></div>
+                </div>
+                <div class="preview-score-meta">Voice match<br><strong style="color:#0a0a0a">Significant drift</strong></div>
+              </div>
+              <div class="preview-notes">
+                <div class="preview-note preview-note-err">
+                  <span class="note-tag">Aiism ↓</span> "pleased to announce" — you never write like a press release. Replace with what you actually want to say.
+                </div>
+                <div class="preview-note preview-note-warn">
+                  <span class="note-tag">Vague ↓</span> "achieve their goals" is doing no work here. What goal? Be specific.
+                </div>
+                <div class="preview-note preview-note-ok">
+                  <span class="note-tag">✓ Good</span> "Our team has worked hard" — direct, human. Keep this energy throughout.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- STRIP -->
+    <div class="strip">
+      <div class="strip-item">
+        <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><circle cx="6.5" cy="6.5" r="6.5" fill="#0a0a0a"/><path d="M3.5 6.5L5.5 8.5L9.5 4.5" stroke="white" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span>Built on The Signal Engine</span>
+      </div>
+      <span class="strip-divider">·</span>
+      <div class="strip-item">
+        <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><circle cx="6.5" cy="6.5" r="6.5" fill="#0a0a0a"/><path d="M3.5 6.5L5.5 8.5L9.5 4.5" stroke="white" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span>3-minute setup</span>
+      </div>
+      <span class="strip-divider">·</span>
+      <div class="strip-item">
+        <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><circle cx="6.5" cy="6.5" r="6.5" fill="#0a0a0a"/><path d="M3.5 6.5L5.5 8.5L9.5 4.5" stroke="white" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span>Sentence-level feedback</span>
+      </div>
+      <span class="strip-divider">·</span>
+      <div class="strip-item">
+        <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><circle cx="6.5" cy="6.5" r="6.5" fill="#0a0a0a"/><path d="M3.5 6.5L5.5 8.5L9.5 4.5" stroke="white" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span>Voice drift tracking over time</span>
+      </div>
+      <span class="strip-divider">·</span>
+      <div class="strip-item">
+        <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><circle cx="6.5" cy="6.5" r="6.5" fill="#0a0a0a"/><path d="M3.5 6.5L5.5 8.5L9.5 4.5" stroke="white" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span>Works for solo creators &amp; teams</span>
+      </div>
+    </div>
+
+    <!-- PROBLEM -->
+    <section id="problem" class="section">
+      <div class="wrap-wide">
+        <div class="problem-layout">
+          <div class="problem-sticky">
+            <span class="eyebrow" data-reveal>The problem</span>
+            <h2 data-reveal style="--delay:60ms">You know when it's off. You just can't say why.</h2>
+            <p data-reveal style="--delay:120ms">You've written things that sounded exactly right — direct, warm, distinctly you. Then, under deadline, something slips. Voice drift is quiet. You rarely catch it in the moment.</p>
+          </div>
+          <div class="problem-list">
+            <div class="problem-entry" data-reveal>
+              <div class="problem-num">01</div>
+              <h3>You feel the drift — but you can't name it.</h3>
+              <p>A sentence reads wrong. Something's too formal, too flat, too safe. You rewrite it three times and you're still not sure you got there. There's no benchmark. Just instinct.</p>
+            </div>
+            <div class="problem-entry" data-reveal style="--delay:60ms">
+              <div class="problem-num">02</div>
+              <h3>You hire a writer. They sound like every other writer.</h3>
+              <p>They're competent. They hit the brief. But what they produce sounds like content, not you. Now you spend more time editing than you would have just writing it yourself.</p>
+            </div>
+            <div class="problem-entry" data-reveal style="--delay:120ms">
+              <div class="problem-num">03</div>
+              <h3>You use AI to move faster. Now everything sounds the same.</h3>
+              <p>Your newsletter reads like a terms-of-service document that attended a TED talk. The ideas are yours. The voice isn't. And your readers can tell.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- HOW IT WORKS -->
+    <section id="how-it-works" class="section">
+      <div class="wrap-wide">
+        <div class="hiw-header">
+          <span class="eyebrow" data-reveal>How it works</span>
+          <h2 data-reveal style="--delay:60ms">Three minutes to calibrate.<br>Seconds to analyze.</h2>
+          <p data-reveal style="--delay:120ms">No onboarding calls. No 40-question brand audit. Pick your references, paste your draft, get your feedback.</p>
+        </div>
+        <div class="hiw-steps" data-reveal style="--delay:80ms">
+          <div class="hiw-step">
+            <div class="hiw-icon">
+              <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M3 5h12M3 9h7M3 13h4" stroke="#0a0a0a" stroke-width="1.5" stroke-linecap="round"/><circle cx="13" cy="9" r="2" stroke="#0a0a0a" stroke-width="1.5"/></svg>
+            </div>
+            <div class="hiw-step-n">01 — Calibrate</div>
+            <h3>Build your voice profile</h3>
+            <p>Answer five questions. Upload two to three pieces that sound like you at your best. Hold Your Voice builds a benchmark from your actual writing.</p>
+          </div>
+          <div class="hiw-step">
+            <div class="hiw-icon">
+              <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><rect x="3" y="2" width="9" height="12" rx="1.5" stroke="#0a0a0a" stroke-width="1.5"/><path d="M6 6h3M6 9h2" stroke="#0a0a0a" stroke-width="1.5" stroke-linecap="round"/><circle cx="13" cy="13" r="2.5" stroke="#0a0a0a" stroke-width="1.5"/><path d="M15 15l1.5 1.5" stroke="#0a0a0a" stroke-width="1.5" stroke-linecap="round"/></svg>
+            </div>
+            <div class="hiw-step-n">02 — Analyze</div>
+            <h3>Paste anything</h3>
+            <p>A LinkedIn post, newsletter intro, product page, pitch. The Signal Engine reads it against your profile and scores the match across six dimensions.</p>
+          </div>
+          <div class="hiw-step">
+            <div class="hiw-icon">
+              <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M3 13.5L5.5 11l6.5-6.5 2 2L7.5 13l-2.5.5-.5-2.5z" stroke="#0a0a0a" stroke-width="1.5" stroke-linejoin="round"/><path d="M10.5 5.5l2 2" stroke="#0a0a0a" stroke-width="1.5"/></svg>
+            </div>
+            <div class="hiw-step-n">03 — Fix</div>
+            <h3>Get specific feedback</h3>
+            <p>Not "sounds too formal." Exactly which words drifted, why they're not working, and what to replace them with. Fix it right there.</p>
+          </div>
+          <div class="hiw-step">
+            <div class="hiw-icon">
+              <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M3 13L7 8l3 3 4-6" stroke="#0a0a0a" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 5h3v3" stroke="#0a0a0a" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </div>
+            <div class="hiw-step-n">04 — Track</div>
+            <h3>Get better over time</h3>
+            <p>Every review is logged. Your history shows you which mistakes you keep making. Over time, Hold Your Voice learns your specific drift patterns.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- WHY NOW -->
+    <section id="why-now" class="section">
+      <div class="wrap-wide">
+        <div class="why-now-layout">
+          <div>
+            <span class="eyebrow" style="color:rgba(255,255,255,0.3)" data-reveal>Why this matters right now</span>
+            <h2 class="why-now-h2" data-reveal style="--delay:60ms">The AI content flood is real. Sounding like yourself is the only way out.</h2>
+            <p class="why-now-sub" data-reveal style="--delay:120ms">Every brand is publishing more. Most of it sounds the same. The brands that cut through will be the ones with a voice too distinct to mistake.</p>
+            <ul class="why-now-bullets" data-reveal style="--delay:160ms">
+              <li class="why-now-bullet"><span class="wn-dot"></span><span><strong>3× more content</strong> is published today than three years ago — most of it AI-assisted, most of it forgettable.</span></li>
+              <li class="why-now-bullet"><span class="wn-dot"></span><span><strong>~70% of B2B content</strong> is now written with AI. The patterns are identical. Readers have learned to skim it.</span></li>
+              <li class="why-now-bullet"><span class="wn-dot"></span><span><strong>No other tool</strong> checks your writing against how you specifically sound. Generic tone isn't the bar. Your best work is.</span></li>
+            </ul>
+          </div>
+          <!-- Drift mockup -->
+          <div data-reveal style="--delay:200ms">
+            <div class="drift-window">
+              <div class="drift-titlebar">
+                <div class="titlebar-dots">
+                  <div class="titlebar-dot dot-red"></div>
+                  <div class="titlebar-dot dot-yellow"></div>
+                  <div class="titlebar-dot dot-green"></div>
+                </div>
+                <span class="drift-titlebar-label">Hold Your Voice — Voice History</span>
+              </div>
+              <div class="drift-body">
+                <div class="drift-section-label">Your voice consistency · Last 30 days</div>
+                <div class="drift-bars">
+                  <div class="drift-bar-wrap"><div class="drift-bar drift-bar-ok" style="height:91%"></div></div>
+                  <div class="drift-bar-wrap"><div class="drift-bar drift-bar-ok" style="height:88%"></div></div>
+                  <div class="drift-bar-wrap"><div class="drift-bar drift-bar-ok" style="height:85%"></div></div>
+                  <div class="drift-bar-wrap"><div class="drift-bar drift-bar-warn" style="height:74%"></div></div>
+                  <div class="drift-bar-wrap"><div class="drift-bar drift-bar-warn" style="height:68%"></div></div>
+                  <div class="drift-bar-wrap"><div class="drift-bar drift-bar-warn" style="height:71%"></div></div>
+                  <div class="drift-bar-wrap"><div class="drift-bar drift-bar-bad" style="height:55%"></div></div>
+                  <div class="drift-bar-wrap"><div class="drift-bar drift-bar-bad" style="height:49%"></div></div>
+                  <div class="drift-bar-wrap"><div class="drift-bar drift-bar-bad" style="height:44%"></div></div>
+                </div>
+                <div class="drift-x-labels">
+                  <div class="drift-x-label">Week 1</div>
+                  <div class="drift-x-label"></div>
+                  <div class="drift-x-label"></div>
+                  <div class="drift-x-label">Week 2</div>
+                  <div class="drift-x-label"></div>
+                  <div class="drift-x-label"></div>
+                  <div class="drift-x-label">Week 3</div>
+                  <div class="drift-x-label"></div>
+                  <div class="drift-x-label">Week 4</div>
+                </div>
+                <div class="drift-summary">
+                  <div class="drift-summary-row">
+                    <span class="drift-summary-label">Average voice score</span>
+                    <span class="drift-summary-val" style="color:#f87171">58 / 100</span>
+                  </div>
+                  <div class="drift-summary-row">
+                    <span class="drift-summary-label">Drift from your benchmark</span>
+                    <span class="drift-summary-val" style="color:#fbbf24">−39 points</span>
+                  </div>
+                  <div class="drift-summary-row">
+                    <span class="drift-summary-label">Most common pattern</span>
+                    <span class="drift-summary-val" style="color:rgba(255,255,255,0.7)">Aiism (14×)</span>
+                  </div>
+                  <div class="drift-tag drift-tag-warn">⚠ Significant drift detected — review your last 6 pieces</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- FRAMEWORK -->
+    <section id="framework" class="section">
+      <div class="wrap-wide">
+        <div class="fw-layout">
+          <div class="fw-sticky">
+            <span class="eyebrow" data-reveal>The Signal Engine</span>
+            <h2 data-reveal style="--delay:60ms">Six steps. One standard. Yours.</h2>
+            <p data-reveal style="--delay:120ms">Every review runs on The Signal Engine — a six-step writing framework built to identify what makes your voice distinct, then measure everything against it. Not generic AI tone-checking. A real methodology.</p>
+          </div>
+          <div class="fw-list">
+            <div class="fw-item" data-reveal>
+              <div class="fw-n">01</div>
+              <div>
+                <h3>The Scene-Set</h3>
+                <p>Does your opening pull people in or ease them in? There's a difference — and only one of them works.</p>
+              </div>
+            </div>
+            <div class="fw-item" data-reveal style="--delay:50ms">
+              <div class="fw-n">02</div>
+              <div>
+                <h3>Aiism Eliminator</h3>
+                <p>Catches every pattern that makes writing sound like it was generated, not thought. If a machine would write it, you shouldn't.</p>
+              </div>
+            </div>
+            <div class="fw-item" data-reveal style="--delay:100ms">
+              <div class="fw-n">03</div>
+              <div>
+                <h3>7 Tools of Trust</h3>
+                <p>Vagueness kills credibility. Flags every claim that isn't backed by specificity — the kind readers feel before they can name it.</p>
+              </div>
+            </div>
+            <div class="fw-item" data-reveal style="--delay:150ms">
+              <div class="fw-n">04</div>
+              <div>
+                <h3>The Pivot</h3>
+                <p>When your writing needs to move from story to point, does it land cleanly or lurch awkwardly? The pivot is where most drafts lose their readers.</p>
+              </div>
+            </div>
+            <div class="fw-item" data-reveal style="--delay:200ms">
+              <div class="fw-n">05</div>
+              <div>
+                <h3>The Loop Strategy</h3>
+                <p>Open a question early. Answer it late. Does your structure pull readers forward, or give them an easy exit every paragraph?</p>
+              </div>
+            </div>
+            <div class="fw-item" data-reveal style="--delay:250ms">
+              <div class="fw-n">06</div>
+              <div>
+                <h3>Angles of Attraction</h3>
+                <p>Is your content saying something, or just occupying space? Find the angle your competitors avoided and write from there.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- WHY NOT AI -->
+    <section id="why-not-ai" class="section">
+      <div class="wrap-wide">
+        <div class="wna-header">
+          <span class="eyebrow" data-reveal>Why not just ask ChatGPT?</span>
+          <h2 data-reveal style="--delay:60ms">Generic AI gives you generic feedback.</h2>
+          <p data-reveal style="--delay:120ms">You can ask Claude or ChatGPT to "check your brand voice" — and it'll give you something that sounds helpful. But it has no idea how you actually sound. It's measuring you against a generic average, not your best work.</p>
+        </div>
+        <div class="wna-grid" data-reveal style="--delay:80ms">
+          <div class="wna-col">
+            <span class="wna-tag wna-tag-bad">ChatGPT / Claude</span>
+            <div class="wna-items">
+              <div class="wna-item wna-item-bad"><span class="wna-icon">✕</span><span>No memory of how you actually write — every session starts from zero</span></div>
+              <div class="wna-item wna-item-bad"><span class="wna-icon">✕</span><span>Measures against a "professional tone" average, not your voice specifically</span></div>
+              <div class="wna-item wna-item-bad"><span class="wna-icon">✕</span><span>Feedback is subjective — "sounds a bit formal" with nothing to act on</span></div>
+              <div class="wna-item wna-item-bad"><span class="wna-icon">✕</span><span>Can't track drift patterns or show you what you keep getting wrong</span></div>
+              <div class="wna-item wna-item-bad"><span class="wna-icon">✕</span><span>No structured framework — just vibes dressed up as analysis</span></div>
+            </div>
+          </div>
+          <div class="wna-col wna-col-dark">
+            <span class="wna-tag wna-tag-good">Hold Your Voice</span>
+            <div class="wna-items">
+              <div class="wna-item wna-item-good"><span class="wna-icon">✓</span><span>Built from your writing — your voice profile is your benchmark, no one else's</span></div>
+              <div class="wna-item wna-item-good"><span class="wna-icon">✓</span><span>Every review scored against The Signal Engine — a real methodology, not guesswork</span></div>
+              <div class="wna-item wna-item-good"><span class="wna-icon">✓</span><span>Sentence-level notes: exactly what drifted, why, and what to change</span></div>
+              <div class="wna-item wna-item-good"><span class="wna-icon">✓</span><span>Tracks your history — shows the patterns you keep falling into</span></div>
+              <div class="wna-item wna-item-good"><span class="wna-icon">✓</span><span>Gets sharper over time — the more you use it, the better it knows your drift</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- PRICING -->
+    <section id="pricing" class="section">
+      <div class="wrap-wide">
+        <div class="pricing-header">
+          <span class="eyebrow" data-reveal>Pricing</span>
+          <h2 data-reveal style="--delay:60ms">Simple pricing.<br>No surprises.</h2>
+          <p data-reveal style="--delay:120ms">Start solo, grow with your team. Both plans lock in at founding member rates at launch.</p>
+        </div>
+        <div class="pricing-cards" data-reveal style="--delay:80ms">
+
+          <!-- Solo -->
+          <div class="pc">
+            <span class="pc-badge pc-badge-default">Solo</span>
+            <div class="pc-name">For individual creators</div>
+            <div class="pc-desc">Protect your own voice as you write, publish, and grow.</div>
+            <div class="pc-price">
+              <span class="pc-dollar">$</span>
+              <span class="pc-num">39</span>
+              <span class="pc-per">/ month</span>
+            </div>
+            <div class="pc-note">Billed monthly · Cancel any time</div>
+            <div class="pc-divider"></div>
+            <ul class="pc-features">
+              <li class="pc-feature">
+                <span class="pc-check pc-check-default"><svg width="9" height="7" viewBox="0 0 9 7" fill="none"><path d="M1 3.5L3 5.5L8 1" stroke="#444" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+                <span><strong>150 content reviews</strong> per month</span>
+              </li>
+              <li class="pc-feature">
+                <span class="pc-check pc-check-default"><svg width="9" height="7" viewBox="0 0 9 7" fill="none"><path d="M1 3.5L3 5.5L8 1" stroke="#444" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+                <span>1 <strong>voice profile</strong> built from your writing</span>
+              </li>
+              <li class="pc-feature">
+                <span class="pc-check pc-check-default"><svg width="9" height="7" viewBox="0 0 9 7" fill="none"><path d="M1 3.5L3 5.5L8 1" stroke="#444" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+                <span>Sentence-level analysis via <strong>The Signal Engine</strong></span>
+              </li>
+              <li class="pc-feature">
+                <span class="pc-check pc-check-default"><svg width="9" height="7" viewBox="0 0 9 7" fill="none"><path d="M1 3.5L3 5.5L8 1" stroke="#444" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+                <span>Full <strong>revision history</strong> and drift tracking</span>
+              </li>
+              <li class="pc-feature">
+                <span class="pc-check pc-check-default"><svg width="9" height="7" viewBox="0 0 9 7" fill="none"><path d="M1 3.5L3 5.5L8 1" stroke="#444" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+                <span>Web app — works wherever you write</span>
+              </li>
+            </ul>
+            <a href="#waitlist" class="btn btn-outline pc-cta">Join the Waitlist</a>
+            <p class="pc-footer">Founding rate locks in at launch.</p>
+          </div>
+
+          <!-- Team -->
+          <div class="pc pc-featured">
+            <span class="pc-badge pc-badge-featured">Team · Most Popular</span>
+            <div class="pc-name" style="color:#fff">For agencies & content teams</div>
+            <div class="pc-desc">Keep everyone on-brand, at scale.</div>
+            <div class="pc-price">
+              <span class="pc-dollar" style="color:#fff">$</span>
+              <span class="pc-num" style="color:#fff">79</span>
+              <span class="pc-per">/ month</span>
+            </div>
+            <div class="pc-note">Billed monthly · Cancel any time</div>
+            <div class="pc-divider"></div>
+            <ul class="pc-features">
+              <li class="pc-feature">
+                <span class="pc-check pc-check-featured"><svg width="9" height="7" viewBox="0 0 9 7" fill="none"><path d="M1 3.5L3 5.5L8 1" stroke="rgba(255,255,255,0.8)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+                <span>Everything in Solo</span>
+              </li>
+              <li class="pc-feature">
+                <span class="pc-check pc-check-featured"><svg width="9" height="7" viewBox="0 0 9 7" fill="none"><path d="M1 3.5L3 5.5L8 1" stroke="rgba(255,255,255,0.8)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+                <span><strong>500 content reviews</strong> per month</span>
+              </li>
+              <li class="pc-feature">
+                <span class="pc-check pc-check-featured"><svg width="9" height="7" viewBox="0 0 9 7" fill="none"><path d="M1 3.5L3 5.5L8 1" stroke="rgba(255,255,255,0.8)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+                <span><strong>Unlimited team members</strong></span>
+              </li>
+            </ul>
+            <a href="#waitlist" id="waitlist" class="btn btn-dark pc-cta" style="background:#fff;color:#0a0a0a;">Join the Waitlist</a>
+            <p class="pc-footer">Founding rate locks in at launch.</p>
+          </div>
+
+        </div>
+        <p class="pricing-note-below" data-reveal style="--delay:120ms">Need more reviews? <a href="#waitlist">Additional credits can be purchased</a> at any time from your account.</p>
+      </div>
+    </section>
+
+    <!-- FAQ -->
+    <section id="faq" class="section">
+      <div class="wrap">
+        <div class="faq-header">
+          <span class="eyebrow" data-reveal>Questions</span>
+          <h2 data-reveal style="--delay:60ms">Frequently asked</h2>
+        </div>
+        <div class="faq-list" data-reveal style="--delay:80ms">
+          <div class="faq-item">
+            <button class="faq-q" aria-expanded="false">
+              Who is Hold Your Voice for?
+              <span class="faq-icon">+</span>
+            </button>
+            <div class="faq-a">Hold Your Voice is built for solo creators, founders, and content teams who write regularly and need their output to sound consistently like them — not like a press release, not like AI, not like whoever they hired last week. If you publish at least weekly and voice consistency matters to your brand, it's for you.</div>
+          </div>
+          <div class="faq-item">
+            <button class="faq-q" aria-expanded="false">
+              How is this different from Grammarly or Hemingway?
+              <span class="faq-icon">+</span>
+            </button>
+            <div class="faq-a">Grammarly corrects grammar. Hemingway improves readability. Neither has any idea how you personally sound. Hold Your Voice is built from your own writing — your voice profile is your benchmark, not a generic standard. It's the difference between a spell-checker and a trusted editor who knows your work.</div>
+          </div>
+          <div class="faq-item">
+            <button class="faq-q" aria-expanded="false">
+              What is The Signal Engine?
+              <span class="faq-icon">+</span>
+            </button>
+            <div class="faq-a">The Signal Engine is the six-step writing framework powering every review inside Hold Your Voice. It evaluates your writing across Scene-Set, Aiism Elimination, Trust signals, The Pivot, Loop Strategy, and Angles of Attraction — the specific patterns that separate writing that moves people from writing that just fills space.</div>
+          </div>
+          <div class="faq-item">
+            <button class="faq-q" aria-expanded="false">
+              How long does setup take?
+              <span class="faq-icon">+</span>
+            </button>
+            <div class="faq-a">About three minutes. You answer five short questions about who you write for and what you want them to feel. Then you upload two to three examples of your best writing. Hold Your Voice builds your voice profile from those references — no onboarding calls, no 40-question brand audit.</div>
+          </div>
+          <div class="faq-item">
+            <button class="faq-q" aria-expanded="false">
+              Is my writing data private?
+              <span class="faq-icon">+</span>
+            </button>
+            <div class="faq-a">Yes. Your writing and voice profile are private to your account and are never used to train models or shared with anyone. You own your content. We're a tool, not a data business.</div>
+          </div>
+          <div class="faq-item">
+            <button class="faq-q" aria-expanded="false">
+              What happens when I hit my monthly review limit?
+              <span class="faq-icon">+</span>
+            </button>
+            <div class="faq-a">You can purchase additional credit bundles at any time from your account — no need to upgrade plans. If you're consistently hitting the limit, the Team plan gives you 500 reviews per month and supports unlimited team members.</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- FOOTER CTA -->
+  <section id="footer-cta">
+    <h2 data-reveal>Your voice is the one thing<br>that can't be copied.</h2>
+    <blockquote data-reveal style="--delay:80ms; font-size: clamp(1rem, 2vw, 1.1875rem); color: var(--ink-2); max-width: 560px; margin: 0 auto 2.5rem; line-height: 1.8;">"Every writer, by the way he uses the language, reveals something of his spirit, his habits, his capacities, his bias. It is impossible to write without revealing your character."<br><cite style="display:block; margin-top:0.875rem; font-size:0.8125rem; font-style:normal; color:var(--ink-3); letter-spacing:0.03em;">— E.B. White, The Elements of Style</cite></blockquote>
+    <div class="footer-ctas" data-reveal style="--delay:160ms">
+      <a href="#waitlist" class="btn btn-dark">Secure your spot →</a>
+      <a href="#how-it-works" class="btn btn-outline">See how it works</a>
+    </div>
+  </section>
+
+  <footer>
+    <div class="footer-inner">
+      <div class="footer-top">
+        <div class="footer-brand">
+          <span class="footer-logo">Hold Your Voice</span>
+          <p class="footer-tagline">Paste what you wrote. Know exactly where your voice drifted — and how to get it back.</p>
+        </div>
+        <div class="footer-nav-cols">
+          <div class="footer-nav-col">
+            <h4>Product</h4>
+            <ul>
+              <li><a href="#how-it-works">How it works</a></li>
+              <li><a href="#framework">The Signal Engine</a></li>
+              <li><a href="#pricing">Pricing</a></li>
+              <li><a href="#faq">FAQ</a></li>
+            </ul>
+          </div>
+          <div class="footer-nav-col">
+            <h4>Why HYV</h4>
+            <ul>
+              <li><a href="#problem">The problem</a></li>
+              <li><a href="#why-now">Why now</a></li>
+              <li><a href="#why-not-ai">vs. ChatGPT</a></li>
+            </ul>
+          </div>
+          <div class="footer-nav-col">
+            <h4>Get started</h4>
+            <ul>
+              <li><a href="#waitlist">Join the waitlist</a></li>
+              <li><a href="https://x.com/istupidpreneur" target="_blank" rel="noopener">Follow on X</a></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <span class="footer-fine">Built with 🖤 by <a href="https://x.com/istupidpreneur" target="_blank" rel="noopener">Shashank</a> · 2026 · Hold Your Voice · A small independent builder who doesn't have enough money for copyrights. Do not sue me.</span>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    // Nav scroll
+    const nav = document.getElementById('nav');
+    window.addEventListener('scroll', () => {
+      nav.classList.toggle('scrolled', window.scrollY > 40);
+    }, { passive: true });
+
+    // Scroll reveal
+    if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      const obs = new IntersectionObserver((entries) => {
+        entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); obs.unobserve(e.target); } });
+      }, { threshold: 0.08, rootMargin: '0px 0px -40px 0px' });
+      document.querySelectorAll('[data-reveal]').forEach(el => obs.observe(el));
+    } else {
+      document.querySelectorAll('[data-reveal]').forEach(el => el.classList.add('visible'));
+    }
+
+    // Smooth scroll
+    document.querySelectorAll('a[href^="#"]').forEach(link => {
+      link.addEventListener('click', e => {
+        const id = link.getAttribute('href').slice(1);
+        const target = document.getElementById(id);
+        if (target) { e.preventDefault(); target.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+      });
+    });
+
+    // FAQ accordion
+    document.querySelectorAll('.faq-q').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const item = btn.closest('.faq-item');
+        const isOpen = item.classList.contains('open');
+        document.querySelectorAll('.faq-item.open').forEach(i => i.classList.remove('open'));
+        if (!isOpen) item.classList.add('open');
+        btn.setAttribute('aria-expanded', !isOpen);
+      });
+    });
+  </script>
+
+</body>
+</html>
