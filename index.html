@@ -301,6 +301,10 @@
       background: #f87171;
       animation: highlight-line 5.5s ease-in-out 0s infinite;
     }
+    .preview-text .drift-late,
+    .preview-text .drift-late::after {
+      animation-delay: 2.8s;
+    }
     @media (prefers-reduced-motion: reduce) {
       .preview-text .drift        { animation: none; background-size: 100% 100%; }
       .preview-text .drift::after { animation: none; transform: scaleX(1); }
@@ -918,7 +922,7 @@
               <div class="preview-input-label">Your draft</div>
               <div class="preview-text">
                 We are <span class="drift-2">pleased to announce</span> the launch of our new product. <span class="drift">It is designed to help users achieve their goals</span> more effectively.<br><br>
-                Our team has worked hard on this. <span class="drift">The solution leverages cutting-edge technology</span> to deliver results that matter to your business.
+                Our team has worked hard on this. <span class="drift drift-late">The solution leverages cutting-edge technology</span> to deliver results that matter to your business.
               </div>
             </div>
             <div class="preview-feedback">
