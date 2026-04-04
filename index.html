@@ -7,8 +7,15 @@
   <meta property="og:title" content="Hold Your Voice — Keep your brand voice consistent">
   <meta property="og:description" content="Paste what you wrote. Get sentence-level feedback on exactly where your voice drifted and how to fix it.">
   <meta property="og:type" content="website">
+  <meta property="og:image" content="og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:image" content="og-image.png">
+  <meta name="twitter:title" content="Hold Your Voice — Keep your brand voice consistent">
+  <meta name="twitter:description" content="Paste what you wrote. Get sentence-level feedback on exactly where your voice drifted and how to fix it.">
   <title>Hold Your Voice</title>
-  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32' fill='none'><rect x='11' y='2' width='10' height='15' rx='5' fill='%230a0a0a'/><path d='M16 18 L16 25' stroke='%230a0a0a' stroke-width='2' stroke-linecap='round'/><path d='M11 25 Q16 28 21 25' stroke='%230a0a0a' stroke-width='2' stroke-linecap='round'/><path d='M9 6 Q4 9.5 9 14' stroke='%230a0a0a' stroke-width='1.75' stroke-linecap='round'/><path d='M6 3.5 Q-1 9.5 6 17' stroke='%230a0a0a' stroke-width='1.4' stroke-linecap='round'/><path d='M23 6 Q28 9.5 23 14' stroke='%230a0a0a' stroke-width='1.75' stroke-linecap='round'/><path d='M26 3.5 Q33 9.5 26 17' stroke='%230a0a0a' stroke-width='1.4' stroke-linecap='round'/></svg>">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text x='50%25' y='54%25' dominant-baseline='middle' text-anchor='middle' font-family='Georgia,serif' font-size='22' fill='%230a0a0a'>h</text></svg>">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Google+Sans:ital,wght@0,400;0,500;0,700;1,400&display=swap" rel="stylesheet">
@@ -85,8 +92,28 @@
       transition: background 0.15s, border-color 0.15s, color 0.15s, scale 0.12s;
     }
     .btn:active { scale: 0.96; }
-    .btn-dark { background: var(--ink); color: #fff; }
-    .btn-dark:hover { background: #222; }
+    .btn-dark {
+      background: var(--ink);
+      color: #fff;
+      position: relative;
+      overflow: hidden;
+    }
+    .btn-dark::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(
+        105deg,
+        transparent 40%,
+        rgba(255,255,255,0.15) 50%,
+        transparent 60%
+      );
+      background-size: 200% 100%;
+      background-position: 200% 0;
+      transition: background-position 0.5s ease;
+    }
+    .btn-dark:hover { background: #111; }
+    .btn-dark:hover::after { background-position: -200% 0; }
     .btn-outline {
       background: transparent;
       border-color: var(--border-2);
@@ -663,6 +690,8 @@
     .wna-item-bad { color: var(--ink-2); }
     .wna-item-good { color: rgba(255,255,255,0.8); }
     .wna-icon { flex-shrink: 0; margin-top: 0.1rem; font-size: 0.75rem; width: 16px; }
+    .wna-item-bad .wna-icon { color: #b91c1c; }
+    .wna-item-good .wna-icon { color: #15803d; }
     @media (max-width: 640px) { .wna-grid { grid-template-columns: 1fr; } }
 
     /* ─── PRICING ────────────────────────────── */
@@ -784,10 +813,17 @@
       align-items: center;
       justify-content: center;
       transition: transform 0.25s, background 0.15s;
-      font-size: 0.75rem;
       color: var(--ink-3);
     }
-    .faq-item.open .faq-icon { transform: rotate(45deg); background: var(--ink); color: #fff; }
+    .faq-icon svg {
+      display: block;
+      transition: stroke 0.15s;
+    }
+    .faq-item.open .faq-icon {
+      transform: rotate(45deg);
+      background: var(--ink);
+    }
+    .faq-item.open .faq-icon svg { stroke: #fff; }
     .faq-a {
       font-size: 0.9375rem;
       color: var(--ink-2);
@@ -1261,7 +1297,6 @@
               </li>
             </ul>
             <a href="#waitlist" class="btn btn-outline pc-cta">Sign Up Now</a>
-            <p class="pc-footer">Founding rate locks in at launch.</p>
           </div>
 
           <!-- Team -->
@@ -1291,7 +1326,6 @@
               </li>
             </ul>
             <a href="#waitlist" id="waitlist" class="btn btn-dark pc-cta" style="background:#fff;color:#0a0a0a;">Sign Up Now</a>
-            <p class="pc-footer">Founding rate locks in at launch.</p>
           </div>
 
         </div>
@@ -1310,42 +1344,42 @@
           <div class="faq-item">
             <button class="faq-q" aria-expanded="false">
               Who is Hold Your Voice for?
-              <span class="faq-icon">+</span>
+              <span class="faq-icon"><svg width="8" height="8" viewBox="0 0 8 8" fill="none" stroke="#888" stroke-width="1.5" stroke-linecap="round"><line x1="4" y1="0" x2="4" y2="8"/><line x1="0" y1="4" x2="8" y2="4"/></svg></span>
             </button>
             <div class="faq-a">Hold Your Voice is built for solo creators, founders, and content teams who write regularly and need their output to sound consistently like them — not like a press release, not like AI, not like whoever they hired last week. If you publish at least weekly and voice consistency matters to your brand, it's for you.</div>
           </div>
           <div class="faq-item">
             <button class="faq-q" aria-expanded="false">
               How is this different from Grammarly or Hemingway?
-              <span class="faq-icon">+</span>
+              <span class="faq-icon"><svg width="8" height="8" viewBox="0 0 8 8" fill="none" stroke="#888" stroke-width="1.5" stroke-linecap="round"><line x1="4" y1="0" x2="4" y2="8"/><line x1="0" y1="4" x2="8" y2="4"/></svg></span>
             </button>
             <div class="faq-a">Grammarly corrects grammar. Hemingway improves readability. Neither has any idea how you personally sound. Hold Your Voice is built from your own writing — your voice profile is your benchmark, not a generic standard. It's the difference between a spell-checker and a trusted editor who knows your work.</div>
           </div>
           <div class="faq-item">
             <button class="faq-q" aria-expanded="false">
               What is The Signal Engine?
-              <span class="faq-icon">+</span>
+              <span class="faq-icon"><svg width="8" height="8" viewBox="0 0 8 8" fill="none" stroke="#888" stroke-width="1.5" stroke-linecap="round"><line x1="4" y1="0" x2="4" y2="8"/><line x1="0" y1="4" x2="8" y2="4"/></svg></span>
             </button>
-            <div class="faq-a">The Signal Engine is the six-step writing framework powering every review inside Hold Your Voice. It evaluates your writing across Scene-Set, Aiism Elimination, Trust signals, The Pivot, Loop Strategy, and Angles of Attraction — the specific patterns that separate writing that moves people from writing that just fills space.</div>
+            <div class="faq-a">the signal engine is the six-step writing framework powering every review inside Hold Your Voice. It evaluates your writing across Scene-Set, Aiism Elimination, Trust signals, The Pivot, Loop Strategy, and Angles of Attraction — the specific patterns that separate writing that moves people from writing that just fills space.</div>
           </div>
           <div class="faq-item">
             <button class="faq-q" aria-expanded="false">
               How long does setup take?
-              <span class="faq-icon">+</span>
+              <span class="faq-icon"><svg width="8" height="8" viewBox="0 0 8 8" fill="none" stroke="#888" stroke-width="1.5" stroke-linecap="round"><line x1="4" y1="0" x2="4" y2="8"/><line x1="0" y1="4" x2="8" y2="4"/></svg></span>
             </button>
             <div class="faq-a">About three minutes. You answer five short questions about who you write for and what you want them to feel. Then you upload two to three examples of your best writing. Hold Your Voice builds your voice profile from those references — no onboarding calls, no 40-question brand audit.</div>
           </div>
           <div class="faq-item">
             <button class="faq-q" aria-expanded="false">
               Is my writing data private?
-              <span class="faq-icon">+</span>
+              <span class="faq-icon"><svg width="8" height="8" viewBox="0 0 8 8" fill="none" stroke="#888" stroke-width="1.5" stroke-linecap="round"><line x1="4" y1="0" x2="4" y2="8"/><line x1="0" y1="4" x2="8" y2="4"/></svg></span>
             </button>
             <div class="faq-a">Yes. Your writing and voice profile are private to your account and are never used to train models or shared with anyone. You own your content. We're a tool, not a data business.</div>
           </div>
           <div class="faq-item">
             <button class="faq-q" aria-expanded="false">
               What happens when I hit my monthly review limit?
-              <span class="faq-icon">+</span>
+              <span class="faq-icon"><svg width="8" height="8" viewBox="0 0 8 8" fill="none" stroke="#888" stroke-width="1.5" stroke-linecap="round"><line x1="4" y1="0" x2="4" y2="8"/><line x1="0" y1="4" x2="8" y2="4"/></svg></span>
             </button>
             <div class="faq-a">You can purchase additional credit bundles at any time from your account — no need to upgrade plans. If you're consistently hitting the limit, the Team plan gives you 500 reviews per month and supports unlimited team members.</div>
           </div>
@@ -1383,7 +1417,7 @@
             </ul>
           </div>
           <div class="footer-nav-col">
-            <h4>Why HYV</h4>
+            <h4>Why us</h4>
             <ul>
               <li><a href="#problem">The problem</a></li>
               <li><a href="#why-now">Why now</a></li>
