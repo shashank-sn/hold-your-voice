@@ -75,6 +75,9 @@
       will-change: transform;
       visibility: hidden;
     }
+    @media (max-width: 600px) {
+      #physical-eraser { width: 60px; height: 36px; }
+    }
     @media (prefers-reduced-motion: reduce) {
       #hero-voice .voice-green { display: none; }
     }
@@ -169,7 +172,7 @@
       position: fixed; top: 0; left: 0; right: 0; z-index: 100;
       height: 56px;
       display: flex; align-items: center; justify-content: space-between;
-      padding: 0 2rem;
+      padding: 0 1.25rem;
       background: rgba(255,255,255,0);
       border-bottom: 1px solid transparent;
       transition: background 0.3s, border-color 0.3s, backdrop-filter 0.3s;
@@ -476,7 +479,7 @@
     .strip-item:hover svg circle { fill: #16a34a; }
     .strip-divider { color: var(--border-2); }
     @media (max-width: 600px) {
-      .strip { gap: 0.625rem 1.25rem; padding: 1.25rem 1.5rem; }
+      .strip { flex-direction: column; align-items: center; gap: 0.625rem; padding: 1.25rem 1.5rem; }
       .strip-divider { display: none; }
     }
 
@@ -1555,7 +1558,8 @@
       const green = voiceEl && voiceEl.querySelector('.voice-green');
       if (!eraser || !voiceEl || !green) return;
 
-      const EW = 100, EH = 60;
+      const isMobile = window.innerWidth <= 600;
+      const EW = isMobile ? 60 : 100, EH = isMobile ? 36 : 60;
       let minX, maxX; // track erased region in page coords
 
       function setPos(x, y, r) {
