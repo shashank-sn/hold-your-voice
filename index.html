@@ -48,6 +48,41 @@
       --max-w-wide: 1100px;
     }
 
+    /* ─── Eraser animation ───────────────────── */
+    #hero-voice {
+      position: relative;
+      display: inline-block;
+    }
+    #hero-voice .voice-black {
+      position: absolute;
+      left: 0; top: 0;
+      color: var(--ink);
+      white-space: nowrap;
+      pointer-events: none;
+    }
+    #hero-voice .voice-green {
+      position: relative;
+      color: #22c55e;
+    }
+    #physical-eraser {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100px;
+      height: 60px;
+      pointer-events: none;
+      z-index: 9999;
+      will-change: transform;
+      visibility: hidden;
+    }
+    @media (prefers-reduced-motion: reduce) {
+      #hero-voice .voice-green { display: none; }
+    }
+
+    /* ─── AI word hover ─────────────────────── */
+    .ai-word { transition: color 0.15s; cursor: default; }
+    .ai-word:hover { color: #dc2626; }
+
     /* ─── Reveal ─────────────────────────────── */
     [data-reveal] {
       opacity: 0;
@@ -114,6 +149,8 @@
     }
     .btn-dark:hover { background: #111; }
     #nav .btn-dark:hover { background: #bbf7d0; color: #14532d; }
+    #hero .btn-dark:hover { background: #bbf7d0 !important; color: #14532d !important; }
+    #hero .btn-outline:hover { background: transparent; border-color: var(--ink); color: var(--ink); }
     .btn-dark:hover::after { background-position: -200% 0; }
     .btn-outline {
       background: transparent;
@@ -382,6 +419,14 @@
     }
     .preview-notes { display: flex; flex-direction: column; gap: 0.75rem; }
     .preview-note {
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      cursor: default;
+    }
+    .preview-note:hover {
+      transform: scale(1.03);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    }
+    .preview-note {
       padding: 0.75rem 0.875rem;
       border-radius: 6px;
       font-size: 0.8125rem;
@@ -426,7 +471,9 @@
       gap: 2rem;
       flex-wrap: wrap;
     }
-    .strip-item { display: flex; align-items: center; gap: 0.5rem; }
+    .strip-item { display: flex; align-items: center; gap: 0.5rem; cursor: default; }
+    .strip-item svg circle { transition: fill 0.2s; }
+    .strip-item:hover svg circle { fill: #16a34a; }
     .strip-divider { color: var(--border-2); }
     @media (max-width: 600px) {
       .strip { gap: 0.625rem 1.25rem; padding: 1.25rem 1.5rem; }
@@ -496,12 +543,21 @@
     .hiw-header p { font-size: 1rem; color: var(--ink-2); max-width: 420px; margin: 0 auto; line-height: 1.75; }
     .hiw-steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: var(--border); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
     .hiw-step { background: #fff; padding: 2rem 1.75rem; }
+    .hiw-step:hover .hiw-icon { background: #dcfce7; }
+    .hiw-step:hover .hiw-icon svg path,
+    .hiw-step:hover .hiw-icon svg circle,
+    .hiw-step:hover .hiw-icon svg rect,
+    .hiw-step:hover .hiw-icon svg line { stroke: #16a34a; }
     .hiw-icon {
       width: 36px; height: 36px;
       border-radius: 10px;
       background: var(--surface);
       display: flex; align-items: center; justify-content: center;
       margin-bottom: 1.25rem;
+      transition: background 0.2s;
+    }
+    .hiw-icon svg path, .hiw-icon svg circle, .hiw-icon svg rect, .hiw-icon svg line {
+      transition: stroke 0.2s;
     }
     .hiw-step-n {
       font-size: 0.6875rem;
@@ -622,7 +678,8 @@
       border-radius: 100px;
       margin-top: 0.875rem;
     }
-    .drift-tag-warn { background: rgba(251,191,36,0.15); color: #fbbf24; border: 1px solid rgba(251,191,36,0.2); }
+    .drift-tag-warn { background: rgba(251,191,36,0.15); color: #fbbf24; border: 1px solid rgba(251,191,36,0.2); transition: background 0.2s, color 0.2s, border-color 0.2s; cursor: default; }
+    .drift-tag-warn:hover { background: rgba(239,68,68,0.2); color: #f87171; border-color: rgba(239,68,68,0.3); }
     @media (max-width: 768px) {
       .why-now-layout { grid-template-columns: 1fr; }
     }
@@ -938,7 +995,7 @@
     <!-- HERO -->
     <section id="hero">
       <div class="hero-top">
-        <h1 class="hero-h1" data-reveal>Your brand has a voice.<br><span style="color:#dc2626">AI is quietly erasing it.</span></h1>
+        <h1 class="hero-h1" data-reveal>your brand has a <span id="hero-voice"><span class="voice-black">voice</span><span class="voice-green">voice</span></span>.<br><span style="color:#dc2626">ai is quietly erasing it.</span></h1>
         <p class="hero-sub" data-reveal style="--delay:80ms">Paste what you wrote. We'll show you, sentence by sentence, exactly where you stopped sounding like yourself — and started sounding like everyone else with a content calendar.</p>
         <div class="hero-ctas" data-reveal style="--delay:180ms">
           <a href="#waitlist" class="btn btn-dark">Sign Up Now — It's Free</a>
@@ -995,7 +1052,7 @@
     <div class="strip">
       <div class="strip-item">
         <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><circle cx="6.5" cy="6.5" r="6.5" fill="#0a0a0a"/><path d="M3.5 6.5L5.5 8.5L9.5 4.5" stroke="white" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        <span>Built on The Signal Engine</span>
+        <span>Built on The Signal Engine*</span>
       </div>
       <span class="strip-divider">·</span>
       <div class="strip-item">
@@ -1041,7 +1098,7 @@
             </div>
             <div class="problem-entry" data-reveal style="--delay:120ms">
               <div class="problem-num">03</div>
-              <h3>You use AI to move faster. Now everything sounds the same.</h3>
+              <h3>You use <span class="ai-word">AI</span> to move faster. Now everything sounds the same.</h3>
               <p>Your newsletter reads like a terms-of-service document that attended a TED talk. The ideas are yours. The voice isn't. And your readers can tell.</p>
             </div>
           </div>
@@ -1100,11 +1157,11 @@
         <div class="why-now-layout">
           <div>
             <span class="eyebrow" style="color:rgba(255,255,255,0.3)" data-reveal>Why this matters right now</span>
-            <h2 class="why-now-h2" data-reveal style="--delay:60ms">The AI content flood is real. Sounding like yourself is the only way out.</h2>
+            <h2 class="why-now-h2" data-reveal style="--delay:60ms">The <span class="ai-word">AI</span> content flood is real. Sounding like yourself is the only way out.</h2>
             <p class="why-now-sub" data-reveal style="--delay:120ms">Every brand is publishing more. Most of it sounds the same. The brands that cut through will be the ones with a voice too distinct to mistake.</p>
             <ul class="why-now-bullets" data-reveal style="--delay:160ms">
-              <li class="why-now-bullet"><span class="wn-dot"></span><span><strong>3× more content</strong> is published today than three years ago — most of it AI-assisted, most of it forgettable.</span></li>
-              <li class="why-now-bullet"><span class="wn-dot"></span><span><strong>~70% of B2B content</strong> is now written with AI. The patterns are identical. Readers have learned to skim it.</span></li>
+              <li class="why-now-bullet"><span class="wn-dot"></span><span><strong>3× more content</strong> is published today than three years ago — most of it <span class="ai-word">AI</span>-assisted, most of it forgettable.</span></li>
+              <li class="why-now-bullet"><span class="wn-dot"></span><span><strong>~70% of B2B content</strong> is now written with <span class="ai-word">AI</span>. The patterns are identical. Readers have learned to skim it.</span></li>
               <li class="why-now-bullet"><span class="wn-dot"></span><span><strong>No other tool</strong> checks your writing against how you specifically sound. Generic tone isn't the bar. Your best work is.</span></li>
             </ul>
           </div>
@@ -1172,7 +1229,7 @@
           <div class="fw-sticky">
             <span class="eyebrow" data-reveal>The Signal Engine</span>
             <h2 data-reveal style="--delay:60ms">Six steps. One standard. Yours.</h2>
-            <p data-reveal style="--delay:120ms">Every review runs on The Signal Engine — a six-step writing framework built to identify what makes your voice distinct, then measure everything against it. Not generic AI tone-checking. A real methodology.</p>
+            <p data-reveal style="--delay:120ms">Every review runs on The Signal Engine — a six-step writing framework built to identify what makes your voice distinct, then measure everything against it. Not generic <span class="ai-word">AI</span> tone-checking. A real methodology.</p>
           </div>
           <div class="fw-list">
             <div class="fw-item" data-reveal>
@@ -1227,7 +1284,7 @@
       <div class="wrap-wide">
         <div class="wna-header">
           <span class="eyebrow" data-reveal>Why not just ask ChatGPT?</span>
-          <h2 data-reveal style="--delay:60ms">Generic AI gives you generic feedback.</h2>
+          <h2 data-reveal style="--delay:60ms">Generic <span class="ai-word">AI</span> gives you generic feedback.</h2>
           <p data-reveal style="--delay:120ms">You can ask Claude or ChatGPT to "check your brand voice" — and it'll give you something that sounds helpful. But it has no idea how you actually sound. It's measuring you against a generic average, not your best work.</p>
         </div>
         <div class="wna-grid" data-reveal style="--delay:80ms">
@@ -1349,7 +1406,7 @@
               Who is Hold Your Voice for?
               <span class="faq-icon"><svg width="8" height="8" viewBox="0 0 8 8" fill="none" stroke="#888" stroke-width="1.5" stroke-linecap="round"><line x1="4" y1="0" x2="4" y2="8"/><line x1="0" y1="4" x2="8" y2="4"/></svg></span>
             </button>
-            <div class="faq-a">Hold Your Voice is built for solo creators, founders, and content teams who write regularly and need their output to sound consistently like them — not like a press release, not like AI, not like whoever they hired last week. If you publish at least weekly and voice consistency matters to your brand, it's for you.</div>
+            <div class="faq-a">Hold Your Voice is built for solo creators, founders, and content teams who write regularly and need their output to sound consistently like them — not like a press release, not like <span class="ai-word">AI</span>, not like whoever they hired last week. If you publish at least weekly and voice consistency matters to your brand, it's for you.</div>
           </div>
           <div class="faq-item">
             <button class="faq-q" aria-expanded="false">
@@ -1442,7 +1499,164 @@
     </div>
   </footer>
 
+  <!-- Physical eraser -->
+  <svg id="physical-eraser" viewBox="0 0 100 62" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <!-- soft drop shadow -->
+    <ellipse cx="50" cy="59" rx="38" ry="4.5" fill="rgba(0,0,0,0.10)"/>
+
+    <!-- TOP FACE -->
+    <!-- main body top -->
+    <path d="M12 18 L26 5 L88 5 L88 18 Z" fill="#ede8df" stroke="#222" stroke-width="1.2" stroke-linejoin="round"/>
+    <!-- cap top -->
+    <path d="M72 18 L86 5 L88 5 L88 18 Z" fill="#1a1a1a"/>
+    <!-- top face inner highlight strip -->
+    <path d="M14 18 L28 6.5 L85 6.5 L85 10 L27 10 L13 21 Z" fill="rgba(255,255,255,0.18)"/>
+    <!-- divider line top -->
+    <line x1="72" y1="18" x2="86" y2="5" stroke="#111" stroke-width="1.2"/>
+
+    <!-- FRONT FACE body -->
+    <rect x="5" y="18" width="67" height="30" rx="2" fill="#f0ebe0" stroke="#222" stroke-width="1.2"/>
+    <!-- subtle inner bevel top edge -->
+    <rect x="5" y="18" width="67" height="3" rx="1" fill="rgba(255,255,255,0.35)"/>
+    <!-- subtle inner bevel bottom edge -->
+    <rect x="5" y="44" width="67" height="4" rx="1" fill="rgba(0,0,0,0.06)"/>
+
+    <!-- FRONT FACE cap -->
+    <rect x="72" y="18" width="23" height="30" rx="2" fill="#1a1a1a" stroke="#111" stroke-width="1.2"/>
+    <!-- cap shine -->
+    <rect x="74" y="19" width="5" height="28" rx="1" fill="rgba(255,255,255,0.06)"/>
+    <!-- divider line front -->
+    <line x1="72" y1="18" x2="86" y2="5" stroke="#111" stroke-width="1.2"/>
+
+    <!-- ERASING EDGE — bottom pink strip -->
+    <rect x="5" y="43" width="67" height="5" rx="1" fill="#f87171"/>
+    <!-- pink edge highlight -->
+    <rect x="5" y="43" width="67" height="1.5" fill="rgba(255,255,255,0.25)"/>
+
+    <!-- "Sam" label — sans-serif via foreignObject trick not possible in SVG favicon,
+         so using font-family referencing Google Sans with Arial fallback -->
+    <text
+      x="38" y="36"
+      font-family="'Google Sans', 'Helvetica Neue', Arial, sans-serif"
+      font-size="12"
+      font-weight="600"
+      fill="#5a4a3a"
+      text-anchor="middle"
+      letter-spacing="0.5"
+      opacity="0.85">Sam</text>
+  </svg>
+
   <script>
+    // Physical eraser animation on "voice"
+    (function() {
+      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+      const eraser = document.getElementById('physical-eraser');
+      const voiceEl = document.getElementById('hero-voice');
+      const green = voiceEl && voiceEl.querySelector('.voice-green');
+      if (!eraser || !voiceEl || !green) return;
+
+      const EW = 100, EH = 60;
+      let minX, maxX; // track erased region in page coords
+
+      function setPos(x, y, r) {
+        eraser.style.transform = 'translate('+x+'px,'+y+'px) rotate('+r+'deg)';
+      }
+
+      function go(from, to, dur, ease, onStep, onDone) {
+        let t0 = null;
+        function step(now) {
+          if (!t0) t0 = now;
+          let t = Math.min((now - t0) / dur, 1);
+          if (ease === 'out') t = 1-(1-t)**3;
+          else if (ease === 'in') t = t**3;
+          const x = from.x+(to.x-from.x)*t;
+          const y = from.y+(to.y-from.y)*t;
+          const r = (from.r||0)+((to.r||0)-(from.r||0))*t;
+          setPos(x, y, r);
+          onStep && onStep(x);
+          if (t < 1) requestAnimationFrame(step);
+          else onDone && onDone();
+        }
+        requestAnimationFrame(step);
+      }
+
+      function peel(eraserX) {
+        const rect = voiceEl.getBoundingClientRect();
+        const wL = rect.left, wW = rect.width;
+        // Eraser covers eraserX → eraserX+EW in page coords
+        if (minX === undefined) { minX = eraserX; maxX = eraserX + EW; }
+        minX = Math.min(minX, eraserX);
+        maxX = Math.max(maxX, eraserX + EW);
+        // Clip green: hide erased columns
+        const cL = Math.max(0, ((minX - wL) / wW) * 100).toFixed(1);
+        const cR = Math.max(0, ((wL + wW - maxX) / wW) * 100).toFixed(1);
+        green.style.clipPath = 'inset(0 '+cR+'% 0 '+cL+'%)';
+      }
+
+      function loop() {
+        minX = undefined; maxX = undefined;
+        green.style.clipPath = 'none';
+        green.style.transition = 'opacity 0.75s ease';
+        green.style.opacity = '1';
+
+        setTimeout(() => {
+          const rect = voiceEl.getBoundingClientRect();
+          const wy = rect.top + rect.height/2 - EH/2;
+          const rot = -12;
+
+          // Pick random side
+          const sides = ['right','left','top','bottom'];
+          const side = sides[Math.floor(Math.random() * 4)];
+
+          // First stroke always goes from the entry side toward the opposite
+          let start, land, s1end, s2end, s3end, exitPos;
+
+          if (side === 'right' || side === 'top') {
+            // Enter from right, stroke R→L→R→exit right
+            start  = side === 'right'
+              ? { x: window.innerWidth+30, y: wy-10, r: -20 }
+              : { x: rect.right, y: -EH-30, r: -80 };
+            land   = { x: rect.right - EW + 5, y: wy,   r: rot };
+            s1end  = { x: rect.left  - 5,      y: wy+3, r: rot };
+            s2end  = { x: rect.right - EW + 5, y: wy-2, r: rot };
+            s3end  = { x: rect.left  - 5,      y: wy+1, r: rot };
+            exitPos= { x: window.innerWidth+30, y: wy-15, r: -20 };
+          } else {
+            // Enter from left/bottom, stroke L→R→L→exit left
+            start  = side === 'left'
+              ? { x: -EW-30, y: wy-10, r: 20 }
+              : { x: rect.left, y: window.innerHeight+30, r: 80 };
+            land   = { x: rect.left  - 5,      y: wy,   r: rot };
+            s1end  = { x: rect.right - EW + 5, y: wy+3, r: rot };
+            s2end  = { x: rect.left  - 5,      y: wy-2, r: rot };
+            s3end  = { x: rect.right - EW + 5, y: wy+1, r: rot };
+            exitPos= { x: -EW-30, y: wy-15, r: 20 };
+          }
+
+          setPos(start.x, start.y, start.r);
+          eraser.style.visibility = 'visible';
+
+          go(start, land, 380, 'out', null, () => {
+            go(land,  s1end, 310, 'linear', peel, () => {
+              go(s1end, s2end, 280, 'linear', peel, () => {
+                go(s2end, s3end, 280, 'linear', peel, () => {
+                  // Fade any leftover green
+                  green.style.transition = 'opacity 0.2s ease';
+                  green.style.opacity = '0';
+                  go(s3end, exitPos, 360, 'in', null, () => {
+                    eraser.style.visibility = 'hidden';
+                    setTimeout(loop, 2800);
+                  });
+                });
+              });
+            });
+          });
+        }, 1400);
+      }
+
+      setTimeout(loop, 1600);
+    })();
+
     // Favicon — Google Sans "h" drawn on canvas once all fonts ready
     function drawFavicon() {
       const canvas = document.createElement('canvas');
