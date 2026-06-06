@@ -1,0 +1,17 @@
+# hold-your-voice wrangler config
+# R2 bucket for voice profile backups + a lightweight Worker
+# that serves profiles (optional, keep offline if you prefer)
+
+name = "hold-your-voice"
+compatibility_date = "2026-06-06"
+
+[[r2_buckets]]
+binding = "VOICE_PROFILES"
+bucket_name = "hold-your-voice-blobs"
+
+# Optional: lightweight Worker to serve voice.md publicly
+# Uncomment to deploy a read-only viewer:
+#
+# [[routes]]
+# pattern = "voice.holdyourvoice.com/*"
+# zone_name = "holdyourvoice.com"
