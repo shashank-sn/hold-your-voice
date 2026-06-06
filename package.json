@@ -1,6 +1,6 @@
 {
-  "name": "hold-your-voice",
-  "version": "0.2.0",
+  "name": "@holdyourvoice/hyv",
+  "version": "0.2.1",
   "description": "AI writing voice preservation toolkit — build voice profiles, scan for AI patterns, rewrite by line. Profiles evolve with every session.",
   "bin": {
     "hyv": "scripts/hold_voice.py",

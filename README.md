@@ -13,7 +13,7 @@ Zero dependencies outside Python 3.10+.
 ## Install
 
 ```bash
-npm install -g hold-your-voice
+npm install -g @holdyourvoice/hyv
 ```
 
 Or clone and run directly:
