@@ -1,0 +1,28 @@
+{
+  "profile_version": "hold-your-voice-portable-v1",
+  "name": "project voice",
+  "source_count": 0,
+  "word_count": 0,
+  "sentence": {
+    "avg_words": 0,
+    "variance": "medium"
+  },
+  "paragraph": {
+    "avg_sentences": 0
+  },
+  "signature": {
+    "case_style": "mixed",
+    "argument_pattern": "mixed",
+    "opening_moves": [],
+    "cadence": [],
+    "anchors": [],
+    "never_list": []
+  },
+  "voice_rules": [],
+  "ai_eliminator": {
+    "rewrite_scope": "flagged-lines-only",
+    "preserve_surrounding_lines": true,
+    "avoid_polished_founder_cadence": true
+  }
+}
+

@@ -1,0 +1,30 @@
+{
+  "name": "hold-your-voice",
+  "version": "0.2.0",
+  "description": "Portable voice matching and AI-writing elimination. Works in any AI coding tool (Claude Code, Cursor, Codex, Command Code, etc).",
+  "author": {
+    "name": "Shashank / Hold Your Voice"
+  },
+  "skills": "./skills/",
+  "bin": {
+    "hyv": "./scripts/hold_voice.py",
+    "hyv-sync": "./scripts/hold_voice_sync.py"
+  },
+  "interface": {
+    "displayName": "Hold Your Voice",
+    "shortDescription": "Match a writer's voice and remove AI drift.",
+    "longDescription": "Build a voice profile from real writing samples, scan drafts for generic AI cadence, and rewrite only the flagged lines. The profile evolves with every session — patterns you accept get stronger, patterns you ignore fade away. Works everywhere: Claude Code, Cursor, Codex, Command Code, any terminal.",
+    "developerName": "Hold Your Voice",
+    "category": "Writing",
+    "capabilities": [
+      "Write",
+      "Analyze",
+      "Edit"
+    ],
+    "defaultPrompt": [
+      "Build a voice profile from these samples.",
+      "Remove AI-writing patterns from this draft.",
+      "Rewrite this in my voice without flattening it."
+    ]
+  }
+}
