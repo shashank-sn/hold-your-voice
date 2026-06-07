@@ -1,26 +1,29 @@
 {
   "name": "@holdyourvoice/hyv",
-  "version": "0.2.1",
-  "description": "AI writing voice preservation toolkit — build voice profiles, scan for AI patterns, rewrite by line. Profiles evolve with every session.",
+  "version": "2.1.0",
+  "description": "Hold Your Voice engine — portable voice profiling, AI pattern detection, and self-improving profiles. Works anywhere Python 3.10+ runs.",
   "bin": {
-    "hyv": "scripts/hold_voice.py",
+    "hyv-voice": "scripts/hold_voice.py",
     "hyv-sync": "scripts/hold_voice_sync.py"
   },
   "files": [
-    "scripts/",
-    "skills/",
-    "assets/"
+    "scripts/hold_voice.py",
+    "scripts/hold_voice_sync.py",
+    "assets/",
+    "skills/"
   ],
   "keywords": [
-    "ai-writing",
-    "voice-profile",
-    "writing-tools",
-    "ai-detection",
-    "content-editing",
+    "voice",
+    "writing",
+    "ai",
+    "cli",
     "brand-voice",
-    "hold-your-voice"
+    "hold-your-voice",
+    "ai-detection",
+    "content-gate",
+    "hyv"
   ],
-  "author": "Shashank / Hold Your Voice",
+  "author": "Hold Your Voice",
   "license": "Apache-2.0",
   "repository": {
     "type": "git",

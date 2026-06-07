@@ -582,6 +582,49 @@ ABSTRACT_STYLE_WORDS = {
     "reinvention",
 }
 
+# --- Expanded AI vocabulary for 2025-2026 models ---
+AI_VOCAB_EXPANDED = {
+    # GPT-4o / Claude fingerprint words
+    "inherently", "underscores", "arguably", "notably", "intrinsically",
+    "fundamentally", "nuanced", "multifaceted", "underscores", "encapsulate",
+    "underscores", "delve", "tapestry", "underscore", "testament",
+    # Phrase-level compounds (checked as substrings)
+    "in the realm of", "it's worth diving into", "the intersection of",
+    "a nuanced understanding", "the broader implications", "shed light on",
+    "robust framework", "it's important to note", "worth noting that",
+    "at the end of the day", "the reality is", "here's the thing",
+    # 2025-2026 model fingerprints
+    "it's worth mentioning", "let's unpack", "let's break down",
+    "to put it simply", "in a nutshell", "the bottom line",
+    "what's fascinating", "what's interesting", "what's remarkable",
+    "the key takeaway", "the key insight", "the key difference",
+}
+
+# --- Writing craft signals (from Magnetic Email principles) ---
+STORYTELLING_SIGNALS = re.compile(
+    r"\b(?:yesterday|last\s+(?:week|month|year|night)|this\s+morning|earlier\s+today)\b|"
+    r"\b(?:i\s+was\s+(?:sitting|standing|walking|driving|lying)|we\s+were\s+(?:enjoying|having|drinking))\b|"
+    r"\b(?:my\s+(?:wife|husband|friend|mother|father|brother|sister|colleague)\s+(?:said|told|asked|laughed))\b|"
+    r"\b(?:i\s+remember|i\s+recall|i\s+once|i\s+used\s+to)\b|"
+    r"\b(?:the\s+sort\s+of|the\s+kind\s+of)\s+\w+\s+(?:you|that)\b",
+    re.I,
+)
+
+CONVERSATIONAL_SIGNALS = re.compile(
+    r"\b(?:let'?s\s+be\s+real|look|listen|here'?s\s+what|here'?s\s+why|think\s+about\s+it)\b|"
+    r"\b(?:you\s+know|right\?|see\?|get\s+it\?|makes\s+sense\?)\b|"
+    r"\b(?:i'?m\s+not\s+(?:gonna|going\s+to)\s+lie|i'?ll\s+be\s+honest|real\s+talk)\b|"
+    r"\b(?:picture\s+this|imagine\s+this|close\s+your\s+eyes)\b|"
+    r"\b(?:by\s+the\s+way|btw|funny\s+thing|random\s+thought)\b",
+    re.I,
+)
+
+SPECIFICITY_SIGNALS = re.compile(
+    r"\b\d{1,3}(?:,\d{3})*(?:\.\d+)?(?:%|percent|k|K|M|B)?\b|"
+    r"\b(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2}\b|"
+    r"\b[A-Z][a-z]+(?:\s+[A-Z][a-z]+)+\b",  # Proper nouns
+)
+
 GENERIC_OPENERS = re.compile(
     r"^(?:most|many|some|all)\s+(?:brands|teams|people|founders|companies|businesses|organizations|leaders)\b|"
     r"^(?:in\s+)?(?:today'?s|the)\s+(?:fast.paced|ever.evolving|modern|digital|current|contemporary)\s+(?:world|age|era|landscape|economy)\b",
@@ -716,6 +759,535 @@ def infer_argument_pattern(text: str) -> str:
     return "mixed"
 
 
+# =============================================================================
+# VOICE-FIRST ANALYSIS FUNCTIONS
+# =============================================================================
+
+def vocabulary_fingerprint(text: str, limit: int = 50) -> dict[str, Any]:
+    """Extract vocabulary fingerprint: distinctive words, signature phrases, sentence starters."""
+    word_list = [w.lower() for w in words(text)]
+    total = len(word_list)
+    if total < 10:
+        return {"distinctive_words": [], "signature_phrases": [], "sentence_starters": [], "total_words": total}
+
+    # Word frequency
+    freq: dict[str, int] = {}
+    for w in word_list:
+        freq[w] = freq.get(w, 0) + 1
+
+    # Distinctive words: appear 2+ times but not in top 50 most common English words
+    COMMON_WORDS = {
+        "the", "a", "an", "is", "are", "was", "were", "be", "been", "being",
+        "have", "has", "had", "do", "does", "did", "will", "would", "could",
+        "should", "may", "might", "shall", "can", "to", "of", "in", "for",
+        "on", "with", "at", "by", "from", "as", "into", "through", "during",
+        "before", "after", "above", "below", "between", "and", "but", "or",
+        "nor", "not", "so", "yet", "both", "either", "neither", "each",
+        "every", "all", "any", "few", "more", "most", "other", "some", "such",
+        "no", "only", "own", "same", "than", "too", "very", "just", "because",
+        "if", "when", "where", "how", "what", "which", "who", "whom", "this",
+        "that", "these", "those", "i", "me", "my", "we", "our", "you", "your",
+        "he", "him", "his", "she", "her", "it", "its", "they", "them", "their",
+    }
+    distinctive = sorted(
+        [(w, c) for w, c in freq.items() if c >= 2 and w not in COMMON_WORDS and len(w) > 2],
+        key=lambda x: -x[1]
+    )[:limit]
+
+    # Signature phrases: recurring 2-4 word combinations
+    bigrams: dict[str, int] = {}
+    trigrams: dict[str, int] = {}
+    for i in range(len(word_list) - 1):
+        bg = f"{word_list[i]} {word_list[i+1]}"
+        bigrams[bg] = bigrams.get(bg, 0) + 1
+    for i in range(len(word_list) - 2):
+        tg = f"{word_list[i]} {word_list[i+1]} {word_list[i+2]}"
+        trigrams[tg] = trigrams.get(tg, 0) + 1
+
+    signature_phrases = []
+    for phrase, count in sorted(bigrams.items(), key=lambda x: -x[1]):
+        if count >= 3 and phrase.split()[0] not in COMMON_WORDS:
+            signature_phrases.append({"phrase": phrase, "count": count})
+    for phrase, count in sorted(trigrams.items(), key=lambda x: -x[1]):
+        if count >= 2:
+            signature_phrases.append({"phrase": phrase, "count": count})
+    signature_phrases = sorted(signature_phrases, key=lambda x: -x["count"])[:20]
+
+    # Sentence starters: first 2-3 words of sentences
+    sentence_list = sentences(text)
+    starters: dict[str, int] = {}
+    for sent in sentence_list:
+        sw = words(sent.lower())[:3]
+        if len(sw) >= 2:
+            key = " ".join(sw)
+            starters[key] = starters.get(key, 0) + 1
+    top_starters = sorted(starters.items(), key=lambda x: -x[1])[:10]
+
+    return {
+        "distinctive_words": [{"word": w, "count": c} for w, c in distinctive],
+        "signature_phrases": signature_phrases,
+        "sentence_starters": [{"phrase": p, "count": c} for p, c in top_starters],
+        "total_words": total,
+        "unique_words": len(freq),
+    }
+
+
+def rhythm_markov(text: str) -> dict[str, Any]:
+    """Build a Markov transition matrix for sentence length patterns.
+    Captures the writer's rhythm: how short sentences follow long ones and vice versa."""
+    sentence_list = sentences(text)
+    lengths = [len(words(s)) for s in sentence_list if words(s)]
+    if len(lengths) < 5:
+        return {"transitions": {}, "length_buckets": [], "pattern": "insufficient_data"}
+
+    # Bucket sentence lengths into: short (1-8), medium (9-16), long (17-25), very_long (26+)
+    def bucket(l: int) -> str:
+        if l <= 8:
+            return "short"
+        if l <= 16:
+            return "medium"
+        if l <= 25:
+            return "long"
+        return "very_long"
+
+    bucketed = [bucket(l) for l in lengths]
+
+    # Build transition counts
+    transitions: dict[str, dict[str, int]] = {}
+    for i in range(len(bucketed) - 1):
+        src = bucketed[i]
+        dst = bucketed[i + 1]
+        if src not in transitions:
+            transitions[src] = {}
+        transitions[src][dst] = transitions[src].get(dst, 0) + 1
+
+    # Normalize to probabilities
+    transition_probs: dict[str, dict[str, float]] = {}
+    for src, dsts in transitions.items():
+        total = sum(dsts.values())
+        transition_probs[src] = {dst: round(count / total, 3) for dst, count in dsts.items()}
+
+    # Compute bucket distribution
+    bucket_counts: dict[str, int] = {}
+    for b in bucketed:
+        bucket_counts[b] = bucket_counts.get(b, 0) + 1
+    bucket_dist = {b: round(c / len(bucketed), 3) for b, c in bucket_counts.items()}
+
+    # Detect dominant rhythm pattern
+    dominant = max(bucket_dist, key=bucket_dist.get) if bucket_dist else "mixed"
+    if bucket_dist.get("medium", 0) > 0.6:
+        pattern = "uniform_medium"  # AI-like
+    elif bucket_dist.get("short", 0) > 0.4 and bucket_dist.get("long", 0) + bucket_dist.get("very_long", 0) > 0.2:
+        pattern = "punchy_mixed"  # Human-like conversational
+    elif len(set(bucketed)) >= 3:
+        pattern = "varied"  # Human-like diverse
+    else:
+        pattern = dominant
+
+    return {
+        "transitions": transition_probs,
+        "distribution": bucket_dist,
+        "pattern": pattern,
+        "avg_length": round(sum(lengths) / len(lengths), 1),
+        "length_variance": round(math.sqrt(sum((l - sum(lengths)/len(lengths))**2 for l in lengths) / len(lengths)), 1),
+    }
+
+
+def emotional_tone(text: str) -> dict[str, float]:
+    """Score text on simple emotional axes using keyword-based scoring.
+    Returns formality, energy, cynicism, warmth scores (0-10)."""
+    low = text.lower()
+    word_list = [w.lower() for w in words(low)]
+    total = max(1, len(word_list))
+
+    # Formality: formal words vs casual words
+    FORMAL = {"therefore", "furthermore", "moreover", "consequently", "nevertheless", "hence",
+              "accordingly", "thus", "whereby", "herein", "thereof", "wherein", "shall", "henceforth"}
+    CASUAL = {"gonna", "wanna", "gotta", "kinda", "sorta", "yeah", "nah", "yep", "nope",
+              "ok", "okay", "cool", "awesome", "stuff", "things", "basically", "honestly",
+              "literally", "totally", "pretty", "super", "really", "damn", "hell", "crap"}
+    formal_count = sum(1 for w in word_list if w in FORMAL)
+    casual_count = sum(1 for w in word_list if w in CASUAL)
+    contractions = len(re.findall(r"\b(?:n't|'re|'ve|'ll|'d|'m|'s)\b", low))
+    formality = max(0, min(10, 5 + (formal_count - casual_count - contractions * 0.3) * 10 / total))
+
+    # Energy: exclamation marks, short sentences, action verbs
+    exclamations = text.count("!")
+    short_sents = sum(1 for s in sentences(text) if len(words(s)) <= 6)
+    ACTION_VERBS = {"go", "run", "build", "create", "make", "do", "get", "take", "start",
+                    "stop", "push", "pull", "drive", "hit", "crush", "nail", "smash", "kill"}
+    action_count = sum(1 for w in word_list if w in ACTION_VERBS)
+    sent_count = max(1, len(sentences(text)))
+    energy = max(0, min(10, 3 + exclamations * 2 / sent_count + short_sents / sent_count * 3 + action_count * 5 / total))
+
+    # Cynicism: negative qualifiers, hedging, dismissive words
+    CYNICAL = {"but", "however", "unfortunately", "sadly", "honestly", "actually", "look",
+               "listen", "truth", "reality", "problem", "issue", "broken", "failed", "wrong",
+               "terrible", "awful", "garbage", "rubbish", "crap", "bullshit", "stupid"}
+    cyn_count = sum(1 for w in word_list if w in CYNICAL)
+    cynicism = max(0, min(10, 2 + cyn_count * 8 / total))
+
+    # Warmth: personal pronouns, empathy words, inclusive language
+    WARMTH = {"we", "us", "our", "together", "friend", "love", "care", "hope", "wish",
+              "happy", "glad", "grateful", "thankful", "appreciate", "welcome", "please"}
+    warmth_count = sum(1 for w in word_list if w in WARMTH)
+    first_person = sum(1 for w in word_list if w in {"i", "me", "my", "we", "us", "our"})
+    warmth = max(0, min(10, 3 + warmth_count * 8 / total + first_person * 3 / total))
+
+    return {
+        "formality": round(formality, 1),
+        "energy": round(energy, 1),
+        "cynicism": round(cynicism, 1),
+        "warmth": round(warmth, 1),
+    }
+
+
+def vocabulary_diversity(text: str) -> dict[str, float]:
+    """Compute vocabulary diversity metrics: TTR, Yule's K, hapax ratio."""
+    word_list = [w.lower() for w in words(text)]
+    total = len(word_list)
+    if total < 20:
+        return {"ttr": 0, "yules_k": 0, "hapax_ratio": 0, "total_words": total}
+
+    freq: dict[str, int] = {}
+    for w in word_list:
+        freq[w] = freq.get(w, 0) + 1
+
+    # Type-Token Ratio (unique / total)
+    ttr = len(freq) / total
+
+    # Hapax legomena ratio (words appearing once / total)
+    hapax = sum(1 for c in freq.values() if c == 1)
+    hapax_ratio = hapax / total
+
+    # Yule's K (vocabulary richness — lower is more diverse)
+    freq_of_freq: dict[int, int] = {}
+    for c in freq.values():
+        freq_of_freq[c] = freq_of_freq.get(c, 0) + 1
+    yules_k = 10000 * sum(i * i * freq_of_freq.get(i, 0) for i in range(1, max(freq_of_freq.keys(), default=0) + 1)) / (total * total) if total > 0 else 0
+
+    return {
+        "ttr": round(ttr, 3),
+        "yules_k": round(yules_k, 1),
+        "hapax_ratio": round(hapax_ratio, 3),
+        "total_words": total,
+        "unique_words": len(freq),
+    }
+
+
+def ngram_repetition(text: str) -> dict[str, Any]:
+    """Detect repeated n-gram patterns that indicate AI-like repetition."""
+    word_list = [w.lower() for w in words(text)]
+    if len(word_list) < 20:
+        return {"repeated_trigrams": [], "echo_score": 0}
+
+    # Trigram frequency
+    trigrams: dict[str, int] = {}
+    for i in range(len(word_list) - 2):
+        tg = f"{word_list[i]} {word_list[i+1]} {word_list[i+2]}"
+        trigrams[tg] = trigrams.get(tg, 0) + 1
+
+    # Repeated trigrams (3+ times)
+    repeated = sorted(
+        [(tg, c) for tg, c in trigrams.items() if c >= 3],
+        key=lambda x: -x[1]
+    )[:20]
+
+    # 4-gram frequency
+    fourgrams: dict[str, int] = {}
+    for i in range(len(word_list) - 3):
+        fg = f"{word_list[i]} {word_list[i+1]} {word_list[i+2]} {word_list[i+3]}"
+        fourgrams[fg] = fourgrams.get(fg, 0) + 1
+    repeated_4 = sorted(
+        [(fg, c) for fg, c in fourgrams.items() if c >= 2],
+        key=lambda x: -x[1]
+    )[:10]
+
+    # Echo score: proportion of words that are part of repeated trigrams
+    words_in_repeats = sum(c * 3 for _, c in repeated)
+    echo_score = min(1.0, words_in_repeats / max(1, len(word_list)))
+
+    return {
+        "repeated_trigrams": [{"phrase": t, "count": c} for t, c in repeated],
+        "repeated_fourgrams": [{"phrase": f, "count": c} for f, c in repeated_4],
+        "echo_score": round(echo_score, 3),
+    }
+
+
+def perplexity_proxy(text: str) -> dict[str, Any]:
+    """Estimate perplexity using word transition predictability.
+    Low perplexity = predictable = AI-like. High perplexity = surprising = human-like."""
+    word_list = [w.lower() for w in words(text)]
+    if len(word_list) < 10:
+        return {"avg_predictability": 0, "low_perplexity_sentences": [], "score": 0}
+
+    # Build bigram frequencies from the text itself
+    bigrams: dict[str, dict[str, int]] = {}
+    for i in range(len(word_list) - 1):
+        w1, w2 = word_list[i], word_list[i + 1]
+        if w1 not in bigrams:
+            bigrams[w1] = {}
+        bigrams[w1][w2] = bigrams[w1].get(w2, 0) + 1
+
+    # Score each sentence for predictability
+    sentence_list = sentences(text)
+    sentence_scores: list[tuple[int, float, str]] = []
+    for sent in sentence_list:
+        sw = [w.lower() for w in words(sent)]
+        if len(sw) < 3:
+            continue
+        predictability = 0
+        count = 0
+        for i in range(len(sw) - 1):
+            w1, w2 = sw[i], sw[i + 1]
+            if w1 in bigrams:
+                total_transitions = sum(bigrams[w1].values())
+                w2_freq = bigrams[w1].get(w2, 0)
+                predictability += w2_freq / total_transitions
+                count += 1
+        if count > 0:
+            avg_pred = predictability / count
+            line_no = text[:text.find(sent)].count("\n") + 1 if sent in text else 0
+            sentence_scores.append((line_no, avg_pred, sent.strip()[:120]))
+
+    # Flag sentences with unusually high predictability (> 0.7)
+    low_perplexity = [(line, score, sent) for line, score, sent in sentence_scores if score > 0.7]
+    low_perplexity.sort(key=lambda x: -x[1])
+
+    overall_avg = sum(s for _, s, _ in sentence_scores) / max(1, len(sentence_scores))
+
+    return {
+        "avg_predictability": round(overall_avg, 3),
+        "low_perplexity_sentences": [
+            {"line": l, "score": round(s, 3), "text": t}
+            for l, s, t in low_perplexity[:10]
+        ],
+        "score": round(overall_avg, 3),  # Higher = more predictable = more AI-like
+    }
+
+
+def cross_pattern_density(hits: list[dict[str, Any]], text: str) -> list[dict[str, Any]]:
+    """Compute pattern density per paragraph. High density = strong AI signal."""
+    paragraph_list = paragraphs(text)
+    if not paragraph_list:
+        return []
+
+    results = []
+    offset = 0
+    for para in paragraph_list:
+        para_start = text.find(para, offset)
+        if para_start == -1:
+            offset += 1
+            continue
+        para_end = para_start + len(para)
+        para_line = text[:para_start].count("\n") + 1
+        para_word_count = len(words(para))
+
+        # Count hits in this paragraph
+        para_hits = [
+            h for h in hits
+            if h.get("line", 0) >= para_line and h.get("line", 0) <= para_line + para.count("\n")
+        ]
+
+        if para_word_count >= 20:
+            density = len(para_hits) / para_word_count
+            if density > 0.05:  # 5% of words trigger patterns
+                results.append({
+                    "line": para_line,
+                    "density": round(density, 3),
+                    "hits": len(para_hits),
+                    "words": para_word_count,
+                    "text": para.strip()[:160],
+                })
+
+        offset = para_end
+
+    return sorted(results, key=lambda x: -x["density"])[:10]
+
+
+def storytelling_score(text: str) -> dict[str, Any]:
+    """Score text for storytelling elements (TLS: Time, Location, Senses).
+    Based on Kieran Drew's Magnetic Email principles."""
+    low = text.lower()
+    sentence_list = sentences(text)
+    total_sents = max(1, len(sentence_list))
+
+    # Time references
+    time_pattern = re.compile(
+        r"\b(?:yesterday|last\s+(?:week|month|year|night)|this\s+morning|earlier\s+today|"
+        r"monday|tuesday|wednesday|thursday|friday|saturday|sunday|"
+        r"\d{1,2}(?:am|pm)|o'?clock|morning|evening|afternoon)\b", re.I
+    )
+    time_hits = len(time_pattern.findall(low))
+
+    # Location references
+    location_pattern = re.compile(
+        r"\b(?:at\s+the|in\s+the|on\s+the|inside|outside|upstairs|downstairs|"
+        r"kitchen|office|gym|cafe|coffee\s+shop|restaurant|car|train|plane|bed)\b", re.I
+    )
+    location_hits = len(location_pattern.findall(low))
+
+    # Sensory words
+    senses_pattern = re.compile(
+        r"\b(?:saw|heard|felt|tasted|smelled|smelt|touch|touched|"
+        r"bright|dark|loud|quiet|warm|cold|hot|sweet|bitter|sour|"
+        r"soft|hard|smooth|rough|wet|dry|sharp|dull)\b", re.I
+    )
+    senses_hits = len(senses_pattern.findall(low))
+
+    # Dialogue
+    dialogue_hits = len(re.findall(r'[""\u201c\u201d]', text))
+
+    # Story opener (snapshot pattern)
+    story_opener = bool(STORYTELLING_SIGNALS.search(text[:500]))
+
+    # Compute score
+    tls_score = min(1.0, (time_hits + location_hits + senses_hits + dialogue_hits) / max(1, total_sents * 0.3))
+
+    return {
+        "score": round(tls_score, 3),
+        "time_references": time_hits,
+        "location_references": location_hits,
+        "sensory_words": senses_hits,
+        "dialogue_markers": dialogue_hits,
+        "has_story_opener": story_opener,
+    }
+
+
+def conversational_score(text: str) -> dict[str, Any]:
+    """Score text for conversational tone vs. lecture/speech tone.
+    Based on 'Write conversations not speeches' principle."""
+    low = text.lower()
+    sentence_list = sentences(text)
+    total_sents = max(1, len(sentence_list))
+
+    # Direct address (you/your)
+    direct_address = len(re.findall(r"\b(?:you|your|you're|you've|you'll)\b", low))
+
+    # Questions (conversational marker)
+    questions = sum(1 for s in sentence_list if s.strip().endswith("?"))
+
+    # Contractions (casual tone)
+    contractions = len(re.findall(r"\b(?:n't|'re|'ve|'ll|'d|'m|'s)\b", low))
+
+    # First person (personal)
+    first_person = len(re.findall(r"\b(?:i|me|my|we|us|our)\b", low))
+
+    # Conversational phrases
+    conv_hits = len(CONVERSATIONAL_SIGNALS.findall(low))
+
+    # Passive voice (anti-conversational)
+    passive = len(re.findall(r"\b(?:is|are|was|were|been|being|be)\s+\w+ed\b", low))
+
+    # Compute score
+    total_words = max(1, len(words(text)))
+    conv_ratio = (direct_address + questions * 3 + contractions + first_person + conv_hits * 2) / total_words
+    passive_ratio = passive / total_sents
+    score = min(1.0, conv_ratio * 10 - passive_ratio * 0.5)
+
+    return {
+        "score": round(max(0, score), 3),
+        "direct_address": direct_address,
+        "questions": questions,
+        "contractions": contractions,
+        "first_person": first_person,
+        "conversational_phrases": conv_hits,
+        "passive_voice": passive,
+    }
+
+
+def specificity_score(text: str) -> dict[str, Any]:
+    """Score text for specificity: proper nouns, numbers, dates, concrete details.
+    AI text is vague. Human text is specific."""
+    word_list = words(text)
+    total = max(1, len(word_list))
+
+    # Numbers
+    numbers = len(re.findall(r"\b\d+(?:\.\d+)?(?:%|k|K|M|B)?\b", text))
+
+    # Proper nouns (capitalized words not at sentence start)
+    sentences_list = sentences(text)
+    proper_nouns = 0
+    for sent in sentences_list:
+        sw = words(sent)
+        for i, w in enumerate(sw):
+            if i > 0 and w[0].isupper() and w not in {"I", "The", "A", "An"}:
+                proper_nouns += 1
+
+    # Dates
+    dates = len(re.findall(
+        r"\b(?:\d{1,2}[/-]\d{1,2}[/-]\d{2,4}|"
+        r"(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\w*\s+\d{1,2}(?:,?\s+\d{4})?|"
+        r"\d{4})\b", text
+    ))
+
+    # Quotes (specific attribution)
+    quotes = len(re.findall(r'[""\u201c\u201d]', text)) // 2
+
+    # Specificity ratio
+    specific_items = numbers + proper_nouns + dates + quotes
+    ratio = specific_items / total
+
+    return {
+        "score": round(min(1.0, ratio * 15), 3),
+        "numbers": numbers,
+        "proper_nouns": proper_nouns,
+        "dates": dates,
+        "quotes": quotes,
+        "ratio": round(ratio, 4),
+    }
+
+
+def profile_strength(profile: dict[str, Any]) -> dict[str, Any]:
+    """Compute profile strength score (0-100) based on source count, word count, diversity."""
+    source_count = profile.get("source_count", 0)
+    word_count = profile.get("word_count", 0)
+    sources = profile.get("sources", [])
+    signature = profile.get("signature", {})
+
+    # Source count score (0-30)
+    source_score = min(30, source_count * 3)
+
+    # Word count score (0-30)
+    word_score = min(30, word_count / 100)
+
+    # Diversity score (0-20): opening moves + anchors + distinctive words
+    opening_moves = len(signature.get("opening_moves", []))
+    anchors = len(signature.get("anchors", []))
+    diversity_score = min(20, (opening_moves + anchors) * 2)
+
+    # Cadence score (0-10): has rhythm data
+    cadence = signature.get("cadence", [])
+    cadence_score = min(10, len(cadence) * 2.5)
+
+    # Recency score (0-10): based on source file modification times
+    recency_score = 5  # default if we can't determine
+
+    total = source_score + word_score + diversity_score + cadence_score + recency_score
+
+    # Label
+    if total >= 80:
+        label = "strong"
+    elif total >= 50:
+        label = "moderate"
+    elif total >= 25:
+        label = "weak"
+    else:
+        label = "insufficient"
+
+    return {
+        "score": round(min(100, total)),
+        "label": label,
+        "breakdown": {
+            "sources": source_score,
+            "words": word_score,
+            "diversity": diversity_score,
+            "cadence": cadence_score,
+            "recency": recency_score,
+        },
+    }
+
+
 def first_words(text: str, count: int = 7) -> str:
     found = words(text.lower())
     return " ".join(found[:count])
@@ -813,7 +1385,7 @@ def build_profile(paths: list[str], name: str) -> dict[str, Any]:
         voice_rules.append("study these sample opening moves before drafting: " + "; ".join(opening_moves[:4]))
 
     return {
-        "profile_version": "hold-your-voice-portable-v1",
+        "profile_version": "hold-your-voice-portable-v2",
         "name": name,
         "source_count": len(samples),
         "sources": [{"path": sample["path"], "chars": len(sample["text"])} for sample in samples],
@@ -828,6 +1400,11 @@ def build_profile(paths: list[str], name: str) -> dict[str, Any]:
             "anchors": anchors,
             "never_list": never_list,
         },
+        "voice_fingerprint": vocabulary_fingerprint(combined),
+        "rhythm": rhythm_markov(combined),
+        "emotional_tone": emotional_tone(combined),
+        "voice_diversity": vocabulary_diversity(combined),
+        "voice_strength": None,  # computed separately via profile_strength()
         "voice_rules": voice_rules,
         "ai_eliminator": {
             "rewrite_scope": "flagged-lines-only",
@@ -1007,6 +1584,19 @@ def scan_text(text: str) -> list[dict[str, Any]]:
             line_no = text[: match.start()].count("\n") + 1
             hits.append({"line": line_no, "rule": rule_id, "phrase": snippet[:160]})
 
+    # Expanded AI vocabulary detection (2025-2026 model fingerprints)
+    for line_no, line in enumerate((text or "").splitlines(), 1):
+        low = line.lower()
+        for term in AI_VOCAB_EXPANDED:
+            if " " in term:
+                # Multi-word phrase
+                if term in low:
+                    hits.append({"line": line_no, "rule": "ai_vocab_expanded", "phrase": term})
+            else:
+                # Single word — match with word boundaries
+                if re.search(rf"\b{re.escape(term)}\b", low):
+                    hits.append({"line": line_no, "rule": "ai_vocab_expanded", "phrase": term})
+
     for line_no, line in enumerate((text or "").splitlines(), 1):
         for hit in line_style_hits(line):
             hits.append({"line": line_no, "rule": hit["rule"], "phrase": hit["phrase"], "text": line.strip()[:240]})
@@ -1014,6 +1604,17 @@ def scan_text(text: str) -> list[dict[str, Any]]:
     # Structural / rhythmic analysis
     for structural_hit in _structural_analysis(text):
         hits.append(structural_hit)
+
+    # Voice craft signals (from Magnetic Email principles)
+    # Lack of storytelling in long text
+    story_hits = STORYTELLING_SIGNALS.findall(text or "")
+    conv_hits = CONVERSATIONAL_SIGNALS.findall(text or "")
+    word_count = len(words(text or ""))
+    if word_count > 200:
+        if len(story_hits) == 0:
+            hits.append({"line": 0, "rule": "voice_no_storytelling", "phrase": f"no storytelling signals in {word_count} words — text reads like a lecture, not a conversation"})
+        if len(conv_hits) == 0 and word_count > 300:
+            hits.append({"line": 0, "rule": "voice_no_conversation", "phrase": f"no conversational signals in {word_count} words — text speaks at reader, not with them"})
 
     # Staccato triplet detection — only fire when sentences are clearly performative
     sentence_hits = []
@@ -1066,44 +1667,303 @@ def load_draft(path: str) -> tuple[str, str]:
     return str(draft_path), read_text(draft_path)
 
 
+# --- Pattern fix guidance: tells the LLM HOW to fix each pattern type ---
+PATTERN_FIX_GUIDANCE = {
+    "landscape_era": "Replace temporal grandstanding with a concrete observation or remove entirely.",
+    "formulaic_connector": "Replace formal transitions (Moreover, Furthermore, Additionally) with natural flow or short sentences.",
+    "lets_invitation": "Remove the invitation to dive/explore. Just start with the point.",
+    "inflated_verbs": "Replace marketing verbs (unlock, leverage, supercharge) with plain verbs (use, build, get).",
+    "truth_harsh_reality": "Remove the 'reality/truth is' framing. State the point directly.",
+    "ai_vocab_density": "Replace AI-buzzwords with specific, concrete language from the writer's vocabulary.",
+    "ai_vocab_expanded": "Replace with plain language. If the phrase is 'it's important to note', just state the point.",
+    "abstract_noun_cluster": "Replace abstract nouns with concrete examples, scenes, or specific actions.",
+    "ux_buzzwords": "Replace buzzwords (robust, seamless, holistic) with specific descriptions of what the thing actually does.",
+    "binary_reframing": "Remove the 'it's not X, it's Y' structure. State the positive claim directly.",
+    "not_just_but": "Remove the 'not just X but Y' structure. Pick the stronger point and lead with it.",
+    "more_than_just": "Remove 'more than just'. State what it actually is.",
+    "founder_cadence": "Remove the performative cadence (here's the thing, the moment X becomes Y). Write plainly.",
+    "staccato_drama": "Break the staccato pattern. Vary sentence length. Add a longer sentence.",
+    "restatement_polish": "Remove 'in other words' / 'which is another way of saying'. Say it once, clearly.",
+    "spoiler_reveal": "Remove 'spoiler alert' and 'here's the truth' framing.",
+    "hedging_noncommittal": "Remove hedging (it depends, no one-size-fits-all). Take a position or cut the sentence.",
+    "balanced_contrast": "Remove 'on the other hand' / 'on the flip side'. Pick a side or use 'but' briefly.",
+    "empathy_opener": "Remove empathy validation (you're not alone, it's easy to feel). Start with the substance.",
+    "journey_cliche": "Remove journey/destination metaphors. State the actual point.",
+    "ai_metaphors": "Replace metaphor clusters (beacon, tapestry, north star) with concrete language.",
+    "guide_framing": "Remove guide framing (step-by-step, key takeaways, actionable tips). Just write the thing.",
+    "wrapping_patterns": "Remove conclusion patterns (at the end of the day, the bottom line). End on a specific detail or thought.",
+    "buyer_psychology": "Remove 'people don't buy X, they buy Y' templates. State the point directly.",
+    "overwhelm_reassurance": "Remove 'it can feel overwhelming but it doesn't have to be'. Just help.",
+    "pros_cons_framing": "Remove pros/cons structure. Make an argument, don't list.",
+    "triple_adjective": "Remove triple-adjective stacks. Pick the one that matters.",
+    "hidden_depth": "Remove 'behind the scenes' / 'beneath the surface'. State the insight directly.",
+    "self_referential": "Remove AI disclaimers (as an AI model, I can't provide).",
+    "placeholder_brackets": "Replace [your brand] placeholders with specific examples or remove.",
+    "story_templates": "Remove 'imagine this / picture this' templates. Use a real scene or observation.",
+    "clickbait_didnt_know": "Remove 'the X you didn't know you needed' framing.",
+    "self_referential_restatement": "Remove 'you asked about X, let's break it down'. Just answer.",
+    "ted_talk_slogan": "Remove the TED-talk contrastive slogan. State the point plainly.",
+    "perfect_marketing_sentence": "This sentence is too polished and generic. Make it specific or cut it.",
+    "abstract_noun_cluster": "Too many abstract nouns. Replace with concrete examples or actions.",
+    "generic_opening_generalization": "Opens with a sweeping generalization. Start with a specific observation or scene.",
+    "voice_question_opener": "Opens with a question. Start with a statement, scene, or observation instead.",
+    "voice_lesson_opener": "Opens with a lesson/inspiration claim. Start with a specific moment or example.",
+    "cta_ending": "Remove the engagement-bait CTA (let me know if you need help). End on substance.",
+    "voice_no_storytelling": "No storytelling signals found. Add a personal scene, specific moment, or concrete example.",
+    "voice_no_conversation": "Text reads like a lecture. Address the reader directly (you/your), add a question, or use contractions.",
+    "low_burstiness": "Sentence lengths are too uniform. Add a very short sentence (under 6 words) or break a long one.",
+    "mechanical_paragraphs": "Paragraphs are all the same length. Combine some, split others, or add a one-liner.",
+    "uniform_paragraph_rhythm": "Sentences within paragraphs are all 12-22 words. Vary: some 5 words, some 25.",
+    "low_contractions": "Too few contractions. Use don't, can't, it's, you're to sound natural.",
+    "formal_hedging_density": "Too many formal hedges (it is important to note). State things directly.",
+    "generic_intensifiers": "Too many intensifiers (remarkably, incredibly). Cut them or use specifics.",
+    "no_fragments": "No sentence fragments at all — reads over-polished. Add a fragment for texture.",
+    "over_structured_lists": "Lists follow a rigid 3-item pattern. Vary list length or break the pattern.",
+}
+
+
+def _dedupe_hits(hits: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Merge multiple rules per line into one entry with combined rules."""
+    by_line: dict[int, dict[str, Any]] = {}
+    for hit in hits:
+        line = hit.get("line", 0)
+        if line not in by_line:
+            by_line[line] = {"line": line, "rules": [], "phrases": [], "text": hit.get("text", "")}
+        by_line[line]["rules"].append(hit.get("rule", "unknown"))
+        phrase = hit.get("phrase", "")
+        if phrase and phrase not in by_line[line]["phrases"]:
+            by_line[line]["phrases"].append(phrase)
+    return sorted(by_line.values(), key=lambda x: x["line"])
+
+
+def _compress_profile_for_prompt(profile: dict[str, Any] | None) -> str:
+    """Extract only the actionable voice data from a profile for the LLM prompt.
+    Strips out structural metadata, sources, and raw analysis data."""
+    if not profile:
+        return ""
+
+    sig = profile.get("signature", {})
+    tone = profile.get("emotional_tone", {})
+    fp = profile.get("voice_fingerprint", {})
+
+    lines = []
+
+    # Voice anchors — the single most important thing
+    anchors = sig.get("anchors", [])
+    if anchors:
+        lines.append("SOUND LIKE THIS:")
+        lines.append(f'  "{anchors[0][:200]}"')
+        if len(anchors) > 1:
+            lines.append(f'  "{anchors[1][:200]}"')
+        lines.append("")
+
+    # Rhythm + tone in one line
+    cadence = sig.get("cadence", [])
+    rhythm_line = cadence[0] if cadence else ""
+    tone_parts = []
+    if tone:
+        if tone.get("formality", 5) < 4:
+            tone_parts.append("casual")
+        elif tone.get("formality", 5) > 6:
+            tone_parts.append("formal")
+        if tone.get("energy", 5) > 6:
+            tone_parts.append("high-energy")
+        if tone.get("cynicism", 5) > 5:
+            tone_parts.append("cynical")
+        if tone.get("warmth", 5) > 5:
+            tone_parts.append("warm")
+    tone_str = ", ".join(tone_parts) if tone_parts else "neutral"
+    if rhythm_line:
+        lines.append(f"RHYTHM: {rhythm_line}. Tone: {tone_str}.")
+    else:
+        lines.append(f"TONE: {tone_str}.")
+    lines.append("")
+
+    # Never list — compact
+    never = sig.get("never_list", [])
+    if never:
+        lines.append("BANNED: " + " | ".join(never[:6]))
+        lines.append("")
+
+    return "\n".join(lines)
+
+
+def _flagged_line_to_instruction(entry: dict[str, Any]) -> str:
+    """Convert a deduped hit entry into a compact instruction the LLM will actually follow."""
+    line = entry["line"]
+    rules = entry["rules"]
+    phrases = entry["phrases"]
+    phrase_str = phrases[0] if phrases else ""
+
+    # Pick the single most specific fix guidance
+    guidance = ""
+    for rule in rules:
+        if rule in PATTERN_FIX_GUIDANCE:
+            guidance = PATTERN_FIX_GUIDANCE[rule]
+            break
+
+    # Compress: line number + what's wrong + what to do
+    if line == 0:
+        return f"- STRUCTURAL: {guidance}"
+    if guidance:
+        return f"- L{line} \"{phrase_str[:60]}\": {guidance}"
+    return f"- L{line} \"{phrase_str[:60]}\""
+
+
+def apply_replacements(draft: str, replacements_json: str) -> str:
+    """Apply LLM-returned replacements to a draft. Returns the patched text."""
+    try:
+        data = json.loads(replacements_json)
+        replacements = data.get("replacements", [])
+    except (json.JSONDecodeError, TypeError):
+        return draft
+
+    lines = draft.splitlines()
+    for rep in replacements:
+        line_no = rep.get("line", 0)
+        text = rep.get("text", "")
+        if 1 <= line_no <= len(lines):
+            lines[line_no - 1] = text
+    return "\n".join(lines)
+
+
+def rewrite_with_verification(
+    draft: str,
+    profile_text: str | None = None,
+    constraints: str = "",
+    meta: dict[str, Any] | None = None,
+    max_passes: int = 3,
+    rewrite_fn=None,
+) -> dict[str, Any]:
+    """Scan → rewrite → rescan loop. Up to max_passes iterations.
+
+    Args:
+        draft: the original draft text
+        profile_text: voice profile JSON string (optional)
+        constraints: extra rewrite constraints
+        meta: signal meta for learned pattern filtering
+        max_passes: maximum rewrite attempts (default 3)
+        rewrite_fn: callable(draft, prompt) -> str that returns the LLM's JSON response.
+                    If None, returns the prompt only (for external LLM execution).
+
+    Returns dict with:
+        - final_text: the rewritten draft after all passes
+        - initial_hits: pattern count before any rewriting
+        - final_hits: pattern count after last pass
+        - passes_used: how many passes were executed
+        - prompts: list of prompts generated (one per pass)
+        - pass_details: per-pass hit counts
+    """
+    initial_hits = scan_text(draft)
+    if meta:
+        initial_hits = filter_hits_by_weights(initial_hits, meta)
+
+    current_text = draft
+    prompts = []
+    pass_details = []
+
+    for pass_num in range(max_passes):
+        prompt = build_rewrite_prompt("draft", current_text, profile_text, constraints, meta)
+        prompts.append(prompt)
+
+        hits = scan_text(current_text)
+        if meta:
+            hits = filter_hits_by_weights(hits, meta)
+
+        pass_details.append({"pass": pass_num + 1, "hits": len(hits)})
+
+        if not hits:
+            break  # clean — no more patterns
+
+        if rewrite_fn is None:
+            # No LLM available — return prompt for external execution
+            break
+
+        # Call the LLM
+        llm_response = rewrite_fn(current_text, prompt)
+        patched = apply_replacements(current_text, llm_response)
+
+        if patched == current_text:
+            break  # LLM didn't change anything — stop
+
+        current_text = patched
+
+    final_hits = scan_text(current_text)
+    if meta:
+        final_hits = filter_hits_by_weights(final_hits, meta)
+
+    return {
+        "final_text": current_text,
+        "initial_hits": len(initial_hits),
+        "final_hits": len(final_hits),
+        "passes_used": len(pass_details),
+        "prompts": prompts,
+        "pass_details": pass_details,
+    }
+
+
 def build_rewrite_prompt(draft_name: str, draft: str, profile_text: str | None, constraints: str = "", meta: dict[str, Any] | None = None) -> str:
     hits = scan_text(draft)
     if meta:
         hits = filter_hits_by_weights(hits, meta)
-    issue_lines = "\n".join(
-        f"- line {hit['line']} [{hit['rule']}]: {hit.get('phrase', '')}"
-        for hit in hits
-    ) or "- none found by deterministic scan"
+
+    deduped = _dedupe_hits(hits)
+
+    # Build compact issue lines with fix guidance embedded
+    issue_lines = [_flagged_line_to_instruction(entry) for entry in deduped]
+    issue_block = "\n".join(issue_lines) or "- none found"
 
     numbered_draft = "\n".join(f"{idx}: {line}" for idx, line in enumerate(draft.splitlines(), 1))
-    profile_block = profile_text.strip() if profile_text and profile_text.strip() else "(no voice profile supplied)"
-    constraints_block = constraints.strip() if constraints.strip() else "(none)"
 
-    return f"""Rewrite only the flagged lines. Do not rewrite the whole piece.
+    # Compress profile
+    profile_block = ""
+    if profile_text and profile_text.strip():
+        try:
+            profile = json.loads(profile_text)
+            profile_block = _compress_profile_for_prompt(profile)
+        except (json.JSONDecodeError, TypeError):
+            profile_block = ""
 
-Return only valid JSON in this exact shape:
-{{"replacements":[{{"line":1,"text":"replacement line"}}]}}
+    constraints_line = f"\nCONSTRAINTS: {constraints.strip()}" if constraints and constraints.strip() else ""
 
-Rules:
-- Include only flagged line numbers.
-- Preserve unflagged lines exactly by not returning them.
-- Preserve the original argument and local meaning.
-- Use the voice profile as the benchmark when present.
-- Remove AI cadence, polished founder cadence, abstract strategy-deck language, and generic lesson shapes.
-- Do not add new sections, hooks, CTAs, markdown, bullets, or commentary.
+    # Compact prompt — everything the LLM needs, nothing it doesn't
+    prompt = f"""Fix only the flagged lines. Return JSON: {{"replacements":[{{"line":1,"text":"fixed line"}}]}}
 
-Voice profile:
-{profile_block}
+RULES:
+- Only return flagged line numbers. Leave everything else untouched.
+- Keep the original argument. Remove AI patterns — write like a real person.
+- No hooks, CTAs, summaries, or new sections.{constraints_line}
 
-Extra constraints:
-{constraints_block}
+{profile_block}FIX THESE:
+{issue_block}
 
-Flagged lines:
-{issue_lines}
+DRAFT ({draft_name}):
+{numbered_draft}"""
 
-Draft with line numbers ({draft_name}):
-{numbered_draft}
-"""
+    return prompt
+
+
+def build_voice_draft_prompt(draft: str, profile: dict[str, Any] | None, angle: str = "", constraints: str = "") -> str:
+    """Generate a prompt for rewriting an entire draft in the writer's voice."""
+    profile_block = _compress_profile_for_prompt(profile) if profile else ""
+
+    angle_line = f"\nANGLE: {angle}" if angle else ""
+    constraints_line = f"\nCONSTRAINTS: {constraints}" if constraints else ""
+
+    prompt = f"""Rewrite this draft in the voice below. Return the full text only — no commentary.
+
+RULES:
+- Keep the argument and key points. Match the voice anchors and rhythm.
+- Open with a specific observation or scene, not a generalization.
+- Use contractions. Vary sentence length. Write to one person ("you").
+- No AI patterns (let's dive in, robust, holistic, moreover, furthermore).
+- No hooks, CTAs, summaries, or motivational closings.
+- End on a specific detail or quiet thought.{angle_line}{constraints_line}
+
+{profile_block}DRAFT:
+{draft}"""
+
+    return prompt
 
 
 DEFAULT_NEVER_LIST = [
@@ -1935,6 +2795,104 @@ def cmd_rewrite_prompt(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_voice_score(args: argparse.Namespace) -> int:
+    """Score text for voice quality: storytelling, conversation, specificity, tone."""
+    name, text = load_draft(args.draft)
+    story = storytelling_score(text)
+    conv = conversational_score(text)
+    spec = specificity_score(text)
+    tone = emotional_tone(text)
+    diversity = vocabulary_diversity(text)
+    perplexity = perplexity_proxy(text)
+    ngrams = ngram_repetition(text)
+
+    result = {
+        "file": name,
+        "word_count": len(words(text)),
+        "storytelling": story,
+        "conversation": conv,
+        "specificity": spec,
+        "emotional_tone": tone,
+        "vocabulary_diversity": diversity,
+        "perplexity_proxy": perplexity,
+        "ngram_repetition": ngrams,
+        "voice_quality": round(
+            (story["score"] * 0.25 + conv["score"] * 0.25 + spec["score"] * 0.2 +
+             (1 - perplexity["score"]) * 0.15 + diversity["ttr"] * 0.15), 3
+        ),
+    }
+
+    if args.format == "json":
+        print(json.dumps(result, indent=2, ensure_ascii=False))
+    else:
+        print(f"Voice Score for: {name}")
+        print(f"  Words: {result['word_count']}")
+        print(f"  Overall voice quality: {result['voice_quality']:.2f}")
+        print(f"  Storytelling:  {story['score']:.2f}  (time={story['time_references']}, location={story['location_references']}, senses={story['sensory_words']}, dialogue={story['dialogue_markers']})")
+        print(f"  Conversation:  {conv['score']:.2f}  (you/your={conv['direct_address']}, questions={conv['questions']}, contractions={conv['contractions']})")
+        print(f"  Specificity:   {spec['score']:.2f}  (numbers={spec['numbers']}, proper_nouns={spec['proper_nouns']}, quotes={spec['quotes']})")
+        print(f"  Tone:          formality={tone['formality']}, energy={tone['energy']}, cynicism={tone['cynicism']}, warmth={tone['warmth']}")
+        print(f"  Diversity:     TTR={diversity['ttr']}, Yule's K={diversity['yules_k']}, hapax={diversity['hapax_ratio']}")
+        print(f"  Perplexity:    {perplexity['score']:.3f} (higher = more predictable = more AI-like)")
+        print(f"  N-gram echo:   {ngrams['echo_score']:.3f}")
+    return 0
+
+
+def cmd_verify(args: argparse.Namespace) -> int:
+    """Scan a draft, report before/after pattern counts."""
+    name, text = load_draft(args.draft)
+    hits = scan_text(text)
+
+    meta: dict[str, Any] = {}
+    if args.meta:
+        meta_path = Path(args.meta).expanduser()
+        if meta_path.exists():
+            try:
+                meta = json.loads(meta_path.read_text(encoding="utf-8", errors="ignore"))
+            except (json.JSONDecodeError, OSError):
+                pass
+    if meta:
+        hits = filter_hits_by_weights(hits, meta)
+
+    # Group hits by rule
+    rule_counts: dict[str, int] = {}
+    for hit in hits:
+        rule = hit.get("rule", "unknown")
+        rule_counts[rule] = rule_counts.get(rule, 0) + 1
+
+    if args.format == "json":
+        print(json.dumps({
+            "file": name,
+            "total_hits": len(hits),
+            "by_rule": dict(sorted(rule_counts.items(), key=lambda x: -x[1])),
+            "hits": hits,
+        }, indent=2, ensure_ascii=False))
+    else:
+        print(f"Verification: {name}")
+        print(f"  Total patterns: {len(hits)}")
+        if rule_counts:
+            print(f"  By rule:")
+            for rule, count in sorted(rule_counts.items(), key=lambda x: -x[1]):
+                print(f"    {rule}: {count}")
+        else:
+            print(f"  No AI patterns detected.")
+    return 2 if args.fail_on_hit and hits else 0
+
+
+def cmd_voice_draft_prompt(args: argparse.Namespace) -> int:
+    """Generate a full-draft voice rewrite prompt."""
+    name, draft = load_draft(args.draft)
+    profile = None
+    if args.profile:
+        profile_path = Path(args.profile).expanduser()
+        if not profile_path.exists():
+            raise SystemExit(f"profile not found: {profile_path}")
+        profile = json.loads(profile_path.read_text(encoding="utf-8", errors="ignore"))
+    prompt = build_voice_draft_prompt(draft, profile, args.angle or "", args.constraints or "")
+    write_or_print(prompt, args.out)
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Portable Hold Your Voice helpers")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -1999,6 +2957,27 @@ def build_parser() -> argparse.ArgumentParser:
     pev.add_argument("--meta", help="meta JSON file path (default: profile path with .meta.json)")
     pev.add_argument("--new-samples", nargs="*", default=None, help="additional new writing samples to merge (optional)")
     pev.set_defaults(func=cmd_profile_evolve)
+
+    # NEW: voice-first commands
+    vs = sub.add_parser("voice-score", help="score text for voice quality: storytelling, conversation, specificity, tone")
+    vs.add_argument("draft", help="draft file, or '-' for stdin")
+    vs.add_argument("--format", choices=["json", "text"], default="text")
+    vs.set_defaults(func=cmd_voice_score)
+
+    vf = sub.add_parser("verify", help="scan and report pattern breakdown by rule")
+    vf.add_argument("draft", help="draft file, or '-' for stdin")
+    vf.add_argument("--format", choices=["json", "text"], default="text")
+    vf.add_argument("--fail-on-hit", action="store_true", help="exit 2 when issues are found")
+    vf.add_argument("--meta", help="meta JSON file for learned pattern filtering")
+    vf.set_defaults(func=cmd_verify)
+
+    vdp = sub.add_parser("voice-draft-prompt", help="generate a full-draft voice rewrite prompt")
+    vdp.add_argument("draft", help="draft file, or '-' for stdin")
+    vdp.add_argument("--profile", help="voice profile JSON file")
+    vdp.add_argument("--angle", default="", help="writing angle or intent")
+    vdp.add_argument("--constraints", default="", help="extra constraints")
+    vdp.add_argument("--out", help="write prompt to this path")
+    vdp.set_defaults(func=cmd_voice_draft_prompt)
 
     return parser
 
