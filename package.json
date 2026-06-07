@@ -1,6 +1,6 @@
 {
   "name": "@holdyourvoice/hyv",
-  "version": "2.1.0",
+  "version": "2.4.0",
   "description": "Hold Your Voice engine — portable voice profiling, AI pattern detection, and self-improving profiles. Works anywhere Python 3.10+ runs.",
   "bin": {
     "hyv-voice": "scripts/hold_voice.py",
