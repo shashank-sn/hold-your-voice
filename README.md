@@ -23,6 +23,6 @@ hyv scan _posts/ai-slop-example.md
 
 prebuild runs `hyv scan` on every post with `--fail-on-hit`. exits 2 on any hit. vercel refuses the deploy.
 
-runs 100% locally. zero api calls. free forever via `npx @holdyourvoice/hyv`.
+install it once: `npm i -g @holdyourvoice/hyv@latest`. runs 100% locally. zero api calls. free forever.
 
-$1 to start → [holdyourvoice.com](https://holdyourvoice.com)
+$1 first month → [holdyourvoice.com](https://holdyourvoice.com)
