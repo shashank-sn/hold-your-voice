@@ -10,7 +10,7 @@
     "classnames": "^2.5.1",
     "date-fns": "^3.6.0",
     "gray-matter": "^4.0.3",
-    "next": "latest",
+    "next": "^16.2.10",
     "react": "^19",
     "react-dom": "^19",
     "remark": "^15.0.1",
